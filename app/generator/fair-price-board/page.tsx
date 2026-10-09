@@ -1,92 +1,180 @@
 "use client";
 
-import { useAuth } from "@/lib/auth-context";
+import React, { useState } from "react";
+import { useLanguage } from "@/lib/language-context";
 import { MOCK_RATES } from "@/lib/mock-rates";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Banknote, TrendingUp, Scale, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { 
+  DollarSign, TrendingUp, Calculator, CheckCircle2
+} from "lucide-react";
 
-export default function GeneratorPriceBoard() {
-  const { user } = useAuth();
-  
-  if (!user || user.role !== "generator") {
-    return <div className="p-8">Unauthorized. Please log in as a Generator.</div>;
-  }
+export default function FairPriceBoard() {
+  const { lang, t } = useLanguage();
+  const [calcMaterial, setCalcMaterial] = useState("Plastic");
+  const [calcWeight, setCalcWeight] = useState(15);
+
+  const selectedRate = MOCK_RATES.find(r => r.material.toLowerCase() === calcMaterial.toLowerCase()) || MOCK_RATES[0];
+  const marketTotal = selectedRate.marketRate * calcWeight;
+  const fairTotal = selectedRate.fairRate * calcWeight;
+  const extraWorkerBonus = fairTotal - marketTotal;
+  const workerBonusPercent = Math.round((extraWorkerBonus / marketTotal) * 100);
 
   return (
-    <div className="space-y-6 pb-20 max-w-5xl mx-auto">
-      
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <Banknote className="h-6 w-6 text-green-600" />
-          Platform Fair Price Board
-        </h2>
-        <p className="text-slate-500">Transparent pricing. See exactly how your payments empower waste-pickers.</p>
+    <div className="space-y-6 max-w-6xl mx-auto pb-20">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <DollarSign className="h-6 w-6 text-emerald-600" />
+            {lang === "hi" ? "प्लेटफॉर्म फेयर फ्लोर व मंडी भाव बोर्ड" : "Platform Fair Price & Mandi Benchmark Board"}
+          </h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {lang === "hi" 
+              ? "पारदर्शी न्यूनतम दरें जो सुनिश्चित करती हैं कि सफाई मित्रों को बाजार से 33% अधिक उचित मूल्य मिले।"
+              : "Transparent floor rates ensuring informal waste workers are paid above-market value."}
+          </p>
+        </div>
+        <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-xs py-1.5 px-3 font-bold rounded-xl">
+          ✅ {lang === "hi" ? "0% प्लेटफॉर्म कमीशन" : "0% Platform Take Rate"}
+        </Badge>
       </div>
 
-      <Card className="shadow-md">
-        <CardHeader className="bg-slate-50 border-b">
-          <CardTitle className="text-slate-900">Live Material Rates</CardTitle>
-          <CardDescription>
-            We ensure waste-pickers are paid above standard market rates for their essential work.
+      {/* Interactive Value Calculator */}
+      <Card className="bg-gradient-to-br from-slate-900 via-slate-850 to-slate-950 text-white shadow-md border-0 rounded-2xl overflow-hidden">
+        <CardHeader className="p-5 pb-3 border-b border-slate-800">
+          <CardTitle className="text-base flex items-center gap-2 text-emerald-400 font-bold">
+            <Calculator className="h-5 w-5" />
+            {lang === "hi" ? "उचित मूल्य व बिचौलिया-मुक्ति कैलकुलेटर" : "Interactive Fair Value & Anti-Middleman Calculator"}
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-400">
+            {lang === "hi"
+              ? "देखें कि बिचौलियों को हटाकर सफाई मित्र को कितनी अतिरिक्त सीधी आय मिलती है"
+              : "See how much extra income goes directly to the waste-picker by eliminating exploitative middlemen"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-5 sm:p-6">
+          <div className="grid md:grid-cols-12 gap-6 items-center">
+            <div className="md:col-span-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    {lang === "hi" ? "कचरे का प्रकार" : "Select Material"}
+                  </label>
+                  <select
+                    value={calcMaterial}
+                    onChange={(e) => setCalcMaterial(e.target.value)}
+                    className="flex h-11 w-full rounded-xl border border-slate-700 bg-slate-800 px-3 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {MOCK_RATES.map(r => (
+                      <option key={r.id} value={r.material}>
+                        {lang === "hi" ? (r.material === "Plastic" ? "प्लास्टिक" : r.material === "Paper" ? "कागज़" : r.material === "Cardboard" ? "गत्ता" : r.material === "Metal" ? "धातु" : r.material) : r.material} (₹{r.fairRate}/kg)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                    {lang === "hi" ? "अनुमानित वजन (kg)" : "Estimated Weight (kg)"}
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={calcWeight}
+                    onChange={(e) => setCalcWeight(Number(e.target.value) || 1)}
+                    className="h-11 rounded-xl bg-slate-800 border-slate-700 text-white font-bold text-base"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-slate-800/80 rounded-xl border border-slate-700 text-xs text-slate-300 space-y-1.5">
+                <div className="flex justify-between">
+                  <span>{lang === "hi" ? "स्थानीय कबाड़ी दर:" : "Local Middleman Rate:"}</span>
+                  <span className="font-mono text-slate-400">₹{selectedRate.marketRate}/kg (₹{marketTotal})</span>
+                </div>
+                <div className="flex justify-between font-bold text-emerald-400">
+                  <span>{lang === "hi" ? "ReCircle फेयर फ्लोर दर:" : "ReCircle Fair Rate:"}</span>
+                  <span className="font-mono">₹{selectedRate.fairRate}/kg (₹{fairTotal})</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-6 bg-emerald-950/60 p-5 rounded-2xl border border-emerald-500/30 flex flex-col justify-between h-full text-center md:text-left">
+              <div>
+                <div className="text-xs uppercase tracking-wider text-emerald-300 font-bold mb-1">
+                  {lang === "hi" ? "सफाई मित्र को अतिरिक्त लाभ" : "Worker Economic Benefit"}
+                </div>
+                <div className="text-4xl font-black text-emerald-400">+₹{extraWorkerBonus.toFixed(0)}</div>
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  {lang === "hi"
+                    ? `कबाड़ी डीलर की तुलना में सफाई मित्र को +${workerBonusPercent}% अधिक आय मिलती है।`
+                    : `Worker earns +${workerBonusPercent}% more compared to selling to predatory scrap dealers.`}
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-emerald-500/20 text-[11px] text-emerald-300 flex items-center justify-center md:justify-start gap-1.5">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                {lang === "hi" ? "100% पूरा भुगतान सीधे सफाई मित्र के बैंक खाते में" : "Guaranteed full digital payout directly to worker's UPI"}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Rates Table */}
+      <Card className="shadow-xs border-slate-200 rounded-2xl bg-white overflow-hidden">
+        <CardHeader className="p-5 pb-3 border-b border-slate-100 bg-slate-50/50">
+          <CardTitle className="text-base font-bold text-slate-900">
+            {lang === "hi" ? "लाइव स्क्रैप भाव सूचकांक" : "Live Scrap Commodity Index"}
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-500">
+            {lang === "hi" ? "औद्योगिक मिल बेंचमार्क के आधार पर प्रतिदिन अपडेट की जाने वाली फ्लोर दरें" : "Floor prices updated daily against industrial mill benchmarks"}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b">
+            <table className="w-full text-xs text-left">
+              <thead className="text-[11px] text-slate-500 uppercase bg-slate-50/80 border-b border-slate-100">
                 <tr>
-                  <th className="px-6 py-4 font-semibold">Material</th>
-                  <th className="px-6 py-4 font-semibold">Market Rate / kg</th>
-                  <th className="px-6 py-4 font-semibold text-green-700 flex items-center gap-1"><ShieldCheck className="h-4 w-4"/> ReCircle Fair Rate</th>
-                  <th className="px-6 py-4 font-semibold">Sorting Diff.</th>
-                  <th className="px-6 py-4 font-semibold">Demand</th>
-                  <th className="px-6 py-4 font-semibold">Last Updated</th>
+                  <th className="px-6 py-3.5 font-bold">{lang === "hi" ? "सामग्री का प्रकार" : "Material Grade"}</th>
+                  <th className="px-6 py-3.5 font-bold">{lang === "hi" ? "कबाड़ी दर / kg" : "Middleman Rate / kg"}</th>
+                  <th className="px-6 py-3.5 font-bold text-emerald-700">{lang === "hi" ? "ReCircle फेयर दर / kg" : "ReCircle Fair Rate / kg"}</th>
+                  <th className="px-6 py-3.5 font-bold">{lang === "hi" ? "छंटाई प्रयास" : "Sorting Effort"}</th>
+                  <th className="px-6 py-3.5 font-bold">{lang === "hi" ? "बाजार मांग" : "Market Demand"}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {MOCK_RATES.map(rate => (
-                  <tr key={rate.id} className="hover:bg-slate-50">
-                    
-                    <td className="px-6 py-4 font-bold text-slate-900">
-                      {rate.material}
+              <tbody className="divide-y divide-slate-100 font-medium">
+                {MOCK_RATES.map((rate) => (
+                  <tr key={rate.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 font-bold text-slate-900 text-sm">
+                      {lang === "hi" ? (rate.material === "Plastic" ? "प्लास्टिक (Plastic)" : rate.material === "Paper" ? "कागज़ (Paper)" : rate.material === "Cardboard" ? "गत्ता (Cardboard)" : rate.material === "Metal" ? "धातु (Metal)" : rate.material === "Glass" ? "कांच (Glass)" : rate.material) : rate.material}
                     </td>
-
-                    <td className="px-6 py-4 text-slate-500">
+                    <td className="px-6 py-4 text-slate-400 line-through">
                       ₹{rate.marketRate}
                     </td>
-
-                    <td className="px-6 py-4 font-bold text-green-600 bg-green-50/50">
-                      <div className="flex items-center gap-1">
+                    <td className="px-6 py-4 font-black text-emerald-600 bg-emerald-50/40 text-sm">
+                      <div className="flex items-center gap-1.5">
                         ₹{rate.fairRate}
-                        {rate.fairRate > rate.marketRate && <TrendingUp className="h-3 w-3 text-green-500" title="Above Market Rate" />}
+                        <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
                       </div>
                     </td>
-
                     <td className="px-6 py-4">
-                      <Badge variant="outline" className={`
-                        ${rate.sortingDifficulty === 'high' ? 'border-red-200 text-red-700 bg-red-50' : 
-                          rate.sortingDifficulty === 'medium' ? 'border-orange-200 text-orange-700 bg-orange-50' : 
-                          'border-blue-200 text-blue-700 bg-blue-50'}
+                      <Badge variant="outline" className={`rounded-lg text-[10px] ${
+                        rate.sortingDifficulty === 'high' ? 'border-rose-200 text-rose-700 bg-rose-50' : 
+                        rate.sortingDifficulty === 'medium' ? 'border-amber-200 text-amber-700 bg-amber-50' : 
+                        'border-blue-200 text-blue-700 bg-blue-50'}
                       `}>
-                        {rate.sortingDifficulty}
+                        {lang === "hi" ? (rate.sortingDifficulty === 'high' ? "कठिन प्रयास" : rate.sortingDifficulty === 'medium' ? "मध्यम प्रयास" : "आसान प्रयास") : `${rate.sortingDifficulty} effort`}
                       </Badge>
                     </td>
-
                     <td className="px-6 py-4">
-                      <Badge variant="outline" className={`
-                        ${rate.demandLevel === 'high' ? 'border-green-200 text-green-700 bg-green-50' : 
-                          rate.demandLevel === 'low' ? 'border-slate-200 text-slate-500 bg-slate-50' : 
-                          'border-slate-200 text-slate-700'}
-                      `}>
-                        {rate.demandLevel}
-                      </Badge>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                        rate.demandLevel === 'high' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                      }`}>
+                        {lang === "hi" ? (rate.demandLevel === 'high' ? "उच्च मांग" : "सामान्य मांग") : rate.demandLevel}
+                      </span>
                     </td>
-
-                    <td className="px-6 py-4 text-xs text-slate-400">
-                      {rate.lastUpdated}
-                    </td>
-
                   </tr>
                 ))}
               </tbody>
@@ -94,17 +182,6 @@ export default function GeneratorPriceBoard() {
           </div>
         </CardContent>
       </Card>
-      
-      <div className="bg-green-50 border border-green-100 rounded-lg p-5 flex items-start gap-3">
-        <Scale className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-        <div>
-          <h4 className="font-bold text-green-900">The Fair Price Guarantee</h4>
-          <p className="text-sm text-green-800 mt-1">
-            When you schedule a pickup, the algorithm uses these rates to calculate the base payout. We also automatically add compensation for the picker's travel distance and sorting time. 100% of your payment goes directly to the worker.
-          </p>
-        </div>
-      </div>
-
     </div>
   );
 }

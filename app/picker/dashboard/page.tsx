@@ -1,17 +1,39 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { MOCK_REQUESTS, MOCK_PICKERS, MOCK_PAYMENTS } from "@/lib/mock-data";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useLanguage } from "@/lib/language-context";
+import { MOCK_REQUESTS, MOCK_PICKERS, MOCK_PAYMENTS, PickupRequest } from "@/lib/mock-data";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Banknote, CalendarCheck, Clock, MapPin, Map, CheckCircle2, Navigation, IndianRupee, ShieldCheck } from "lucide-react";
+import { 
+  Wallet, 
+  Banknote, 
+  CalendarCheck, 
+  Clock, 
+  MapPin, 
+  CheckCircle2, 
+  Navigation, 
+  ShieldCheck, 
+  Volume2, 
+  Sparkles,
+  MessageCircle,
+  ArrowRight,
+  Mic
+} from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useState } from "react";
+import VoiceGuidanceBar from "@/components/VoiceGuidanceBar";
+import SOSFloatingButton from "@/components/SOSFloatingButton";
+import WhatsAppSimulatorModal from "@/components/WhatsAppSimulatorModal";
+import { speakText, getPickupVoicePrompt, LanguageCode } from "@/lib/voice-assistant";
 
 export default function PickerDashboard() {
   const { user } = useAuth();
-  const router = useRouter();
+  const { lang, t, speak } = useLanguage();
+  const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
+  const [activeWhatsAppPickup, setActiveWhatsAppPickup] = useState<PickupRequest | null>(null);
 
   if (!user || user.role !== "picker") {
     return <div className="p-8">Unauthorized. Please log in as a Waste-Picker.</div>;
@@ -24,7 +46,7 @@ export default function PickerDashboard() {
     return <div className="p-8">Picker profile not found.</div>;
   }
 
-  // Pending Payments Calculation (Completed jobs not yet in a 'completed' payment state, or just a mock)
+  // Pending Payments Calculation
   const myCompletedRequests = MOCK_REQUESTS.filter(r => r.matchedPickerId === user.id && r.status === "completed");
   const myCompletedPaymentsTotal = MOCK_PAYMENTS
     .filter(p => p.receiverId === user.id && p.status === "completed")
@@ -38,12 +60,12 @@ export default function PickerDashboard() {
   const nearbyRequests = MOCK_REQUESTS.filter(r => r.status === "pending");
 
   const markCompleted = (id: string) => {
-    // In a real app, this would be an API call
     const req = MOCK_REQUESTS.find(r => r.id === id);
     if (req) {
       req.status = "completed";
-      alert("Pickup marked as completed! Income added to pending payments.");
-      // Trigger a re-render by doing a hard reload for simplicity in this demo without global state mutators
+      const msg = lang === "hi" ? "पिकअप पूरा हुआ! कमाई आपके वॉलेट में जोड़ दी गई है।" : "Pickup marked as completed! Income credited to your wallet.";
+      speak(msg);
+      toast.success(msg);
       window.location.reload();
     }
   };
@@ -54,122 +76,235 @@ export default function PickerDashboard() {
       req.status = "accepted";
       req.matchedPickerId = user.id;
       req.pickerName = user.name;
-      alert("Pickup Accepted! It has been added to your route.");
+      const msg = lang === "hi" ? "पिकअप स्वीकार कर लिया गया है। यह आपके रूट में जोड़ दिया गया है।" : "Pickup Accepted! Added to your downhill route.";
+      speak(msg);
+      toast.success(msg);
       window.location.reload();
     }
   };
 
+  const handleSpeakCard = (req: any) => {
+    const langCode = (lang === "hi" ? "hi-IN" : lang === "kn" ? "kn-IN" : "en-IN") as LanguageCode;
+    const prompt = getPickupVoicePrompt({
+      generatorName: req.generatorName || "Citizen",
+      wasteType: req.wasteType,
+      weight: req.estimatedWeight,
+      address: req.address,
+      earnings: req.estimatedPrice || req.payoutAmount,
+      distanceKm: 2.5,
+    }, langCode);
+
+    speakText(prompt, langCode);
+    toast.info(lang === "hi" ? "🔊 ऑडियो विवरण चल रहा है..." : "🔊 Playing audio description...");
+  };
+
+  const openWhatsAppModal = (req: PickupRequest) => {
+    setActiveWhatsAppPickup(req);
+    setWhatsAppModalOpen(true);
+  };
+
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-6 pb-20 max-w-6xl mx-auto">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      {/* Header Profile Greeting */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            Hello, {user.name.split(' ')[0]}
+            <span>{t("dash.greeting")}, {user.name.split(' ')[0]}</span>
             {user.verificationStatus === 'verified' && (
-              <ShieldCheck className="h-5 w-5 text-blue-500" title="Verified Worker" />
+              <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2.5 py-0.5 rounded-full font-semibold border border-blue-200">
+                <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />
+                {lang === "hi" ? "सत्यापित रीसायकलर" : "Verified Recycler"}
+              </span>
             )}
           </h2>
-          <p className="text-slate-500">Here is your daily income and route summary.</p>
+          <p className="text-sm text-slate-500 mt-0.5">{t("dash.subtitle")}</p>
         </div>
-        <div className="flex gap-2">
-          <Badge variant={pickerProfile.availability === 'online' ? 'success' : 'warning'} className="px-3 py-1 text-sm">
-            {pickerProfile.availability === 'online' ? 'Online & Accepting' : 'Busy'}
+        <div className="flex items-center gap-3">
+          <Badge variant={pickerProfile.availability === 'online' ? 'success' : 'warning'} className="px-3.5 py-1.5 text-xs font-bold rounded-xl">
+            {pickerProfile.availability === 'online' ? t("dash.online") : t("dash.busy")}
           </Badge>
+          <Link href="/picker/route-planner">
+            <Button size="sm" variant="outline" className="rounded-xl text-xs font-semibold gap-1.5 border-emerald-600 text-emerald-700 hover:bg-emerald-50">
+              <Navigation className="h-3.5 w-3.5" />
+              {lang === "hi" ? "रूट मैप" : "Route Map"}
+            </Button>
+          </Link>
         </div>
       </div>
 
-      {/* Primary Income Stats */}
+      {/* Safai Saathi Audio Co-Pilot Hero Banner */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white p-4 sm:p-5 rounded-2xl border-2 border-emerald-500/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-lg shadow-emerald-500/30">
+            <Mic className="h-6 w-6 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-black text-base text-white">
+                {lang === "hi" ? "सफाई साथी वॉइस असिस्टेंट" : "Safai Saathi Audio Co-Pilot"}
+              </h3>
+              <Badge className="bg-emerald-500/30 text-emerald-300 border-0 text-[10px] font-mono">
+                {lang === "hi" ? "आवाज चालू 🟢" : "Audio Active 🟢"}
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-300 mt-0.5">
+              {lang === "hi"
+                ? "बिना पढ़े बोलकर चलाएं - कमाई, अगला पिकअप और कबाड़ के ताज़ा भाव सुनें।"
+                : "Listen to earnings, next pickup details, or speak your voice commands."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+          <Button
+            size="sm"
+            onClick={() => {
+              speak(lang === "hi" ? "सुरेश जी, आज आपकी कुल कमाई 450 रुपये है। आज 4 पिकअप पूरे किए हैं।" : "Suresh, your earnings today are 450 rupees from 4 pickups.");
+            }}
+            className="h-9 px-3.5 bg-slate-800 hover:bg-slate-750 text-emerald-400 border border-slate-700 text-xs font-bold rounded-xl gap-1.5 shadow-xs"
+          >
+            <Volume2 className="h-4 w-4 text-emerald-400" />
+            {lang === "hi" ? "कमाई सुनें 🔊" : "Listen Earnings 🔊"}
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={() => {
+              speak(lang === "hi" ? "अगला पिकअप 1.2 किलोमीटर दूर कोरमंगला में है, 8 किलो प्लास्टिक, कमाई 144 रुपये।" : "Next pickup is 1.2 km away at Koramangala, 8 kg plastic, payout 144 rupees.");
+            }}
+            className="h-9 px-3.5 bg-slate-800 hover:bg-slate-750 text-amber-300 border border-slate-700 text-xs font-bold rounded-xl gap-1.5 shadow-xs"
+          >
+            <Volume2 className="h-4 w-4 text-amber-300" />
+            {lang === "hi" ? "अगला पिकअप सुनें 🔊" : "Listen Next Job 🔊"}
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("open-safai-saathi"));
+              }
+            }}
+            className="h-9 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black rounded-xl gap-1.5 shadow-md"
+          >
+            <Mic className="h-4 w-4" />
+            {lang === "hi" ? "बोलें 🎙️" : "Speak 🎙️"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Primary Income Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <Card className="bg-slate-900 text-white shadow-md border-0">
+        <Card className="bg-slate-900 text-white shadow-md border-0 rounded-2xl">
           <CardContent className="p-5 sm:p-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xs sm:text-sm font-medium text-slate-400 mb-1">Today's Earnings</p>
-                <h3 className="text-2xl sm:text-3xl font-bold text-green-400">₹{pickerProfile.dailyEarnings}</h3>
+                <p className="text-xs sm:text-sm font-medium text-slate-400 mb-1">{t("dash.todayEarnings")}</p>
+                <h3 className="text-2xl sm:text-3xl font-bold text-emerald-400">₹{pickerProfile.dailyEarnings}</h3>
               </div>
-              <div className="p-2 sm:p-3 bg-slate-800 text-green-400 rounded-full">
+              <div className="p-2.5 sm:p-3 bg-slate-800 text-emerald-400 rounded-2xl">
                 <Banknote className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
             </div>
-            <div className="mt-4 text-xs text-slate-400">Goal: ₹800</div>
-            <div className="mt-1 h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-green-500" style={{ width: `${Math.min(100, (pickerProfile.dailyEarnings / 800) * 100)}%` }}></div>
+            <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+              <span>{t("dash.goal")}</span>
+              <span className="font-semibold text-emerald-400">{Math.round((pickerProfile.dailyEarnings / 800) * 100)}%</span>
+            </div>
+            <div className="mt-1.5 h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 transition-all duration-500 rounded-full" style={{ width: `${Math.min(100, (pickerProfile.dailyEarnings / 800) * 100)}%` }}></div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-t-4 border-t-blue-500">
+        <Card className="border-slate-200 shadow-xs rounded-2xl border-t-4 border-t-blue-500 bg-white">
           <CardContent className="p-5 sm:p-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">Weekly Earnings</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">{t("dash.weeklyEarnings")}</p>
                 <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">₹{pickerProfile.weeklyEarnings}</h3>
               </div>
-              <div className="p-2 sm:p-3 bg-blue-50 text-blue-600 rounded-full hidden sm:block">
+              <div className="p-2.5 sm:p-3 bg-blue-50 text-blue-600 rounded-2xl">
                 <Wallet className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-t-4 border-t-orange-500">
-          <CardContent className="p-5 sm:p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">Pending Payments</p>
-                <h3 className="text-2xl sm:text-3xl font-bold text-orange-600">₹{pendingPaymentsAmount}</h3>
-              </div>
-              <div className="p-2 sm:p-3 bg-orange-50 text-orange-600 rounded-full hidden sm:block">
-                <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
-              </div>
+            <div className="mt-4">
+              <Link href="/picker/wallet" className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                {lang === "hi" ? "वॉलेट देखें" : "View Wallet"} <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-t-4 border-t-purple-500">
+        <Card className="border-slate-200 shadow-xs rounded-2xl border-t-4 border-t-amber-500 bg-white">
           <CardContent className="p-5 sm:p-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">Jobs Completed</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">{t("dash.pendingPayouts")}</p>
+                <h3 className="text-2xl sm:text-3xl font-bold text-amber-600">₹{pendingPaymentsAmount}</h3>
+              </div>
+              <div className="p-2.5 sm:p-3 bg-amber-50 text-amber-600 rounded-2xl">
+                <Clock className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+            </div>
+            <div className="mt-4 text-xs text-slate-400">
+              {lang === "hi" ? "सत्यापन उपरांत स्वतः ट्रांसफर" : "Auto-settled after verification"}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 shadow-xs rounded-2xl border-t-4 border-t-purple-500 bg-white">
+          <CardContent className="p-5 sm:p-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">{t("dash.jobsCompleted")}</p>
                 <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">{pickerProfile.completedJobsToday}</h3>
               </div>
-              <div className="p-2 sm:p-3 bg-purple-50 text-purple-600 rounded-full hidden sm:block">
+              <div className="p-2.5 sm:p-3 bg-purple-50 text-purple-600 rounded-2xl">
                 <CalendarCheck className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
+            </div>
+            <div className="mt-4">
+              <Link href="/picker/karma-credit" className="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1">
+                {lang === "hi" ? "कर्मा स्कोर: 782" : "Karma Score: 782"} <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-3 gap-6">
         
         {/* Left Column: Route & Active Pickups */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Suggested Route Summary */}
+          {/* Suggested Downhill Route Summary */}
           {acceptedPickups.length > 0 && (
-            <Card className="bg-blue-50 border-blue-200">
+            <Card className="bg-gradient-to-br from-blue-50/80 to-indigo-50/40 border-blue-200 rounded-2xl shadow-xs overflow-hidden">
               <CardContent className="p-5">
                 <div className="flex gap-4">
-                  <div className="mt-1 bg-blue-600 rounded-full p-2 h-10 w-10 flex items-center justify-center flex-shrink-0">
+                  <div className="mt-1 bg-blue-600 rounded-2xl p-2.5 h-11 w-11 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <Navigation className="h-5 w-5 text-white" />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-blue-900 mb-1">Suggested Route Summary</h3>
-                    <p className="text-sm text-blue-800 mb-3">Optimize your travel by visiting these locations in order.</p>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-bold text-blue-950">{t("dash.routeSummary")}</h3>
+                      <Link href="/picker/route-planner" className="text-xs font-bold text-blue-700 hover:underline flex items-center gap-1">
+                        {lang === "hi" ? "ढलान नक्शा देखें" : "Strain Map"} <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+                    <p className="text-xs text-blue-800 mb-4">{t("dash.routeSubtitle")}</p>
                     
-                    <div className="space-y-3 relative before:absolute before:inset-0 before:ml-2.5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-blue-300 before:to-transparent">
+                    <div className="space-y-3 relative before:absolute before:inset-0 before:ml-3 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-blue-300 before:to-transparent">
                       {acceptedPickups.map((req, idx) => (
                         <div key={req.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                          <div className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-white bg-blue-500 text-white text-xs font-bold shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 relative">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-white bg-blue-600 text-white text-xs font-bold shadow-xs shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 relative">
                             {idx + 1}
                           </div>
-                          <div className="w-[calc(100%-2.5rem)] md:w-[calc(50%-1.5rem)] p-3 rounded border border-blue-200 bg-white shadow-sm ml-4 md:ml-0">
+                          <div className="w-[calc(100%-2.5rem)] md:w-[calc(50%-1.5rem)] p-3 rounded-xl border border-blue-200 bg-white shadow-xs ml-3 md:ml-0">
                             <div className="font-semibold text-slate-800 text-sm mb-1">{req.generatorName}</div>
                             <div className="text-xs text-slate-500 flex items-center">
-                              <MapPin className="h-3 w-3 mr-1" /> {req.address}
+                              <MapPin className="h-3 w-3 mr-1 text-slate-400" /> {req.address}
                             </div>
                           </div>
                         </div>
@@ -184,50 +319,88 @@ export default function PickerDashboard() {
           {/* Active Pickups */}
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-slate-900">Your Accepted Pickups</h3>
-              <Badge className="bg-slate-200 text-slate-700 hover:bg-slate-300">{acceptedPickups.length} remaining</Badge>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{t("dash.acceptedPickups")}</h3>
+                <p className="text-xs text-slate-500">{lang === "hi" ? "सक्रिय कार्य जो आपको पूरे करने हैं" : "Active tasks assigned to you"}</p>
+              </div>
+              <Badge className="bg-emerald-100 text-emerald-800 font-semibold px-3 py-1 rounded-xl">
+                {acceptedPickups.length} {lang === "hi" ? "सक्रिय काम" : "remaining"}
+              </Badge>
             </div>
 
             <div className="space-y-4">
               {acceptedPickups.length === 0 ? (
-                <Card className="border-dashed">
+                <Card className="border-dashed border-2 rounded-2xl bg-white">
                   <CardContent className="p-8 text-center text-slate-500">
-                    You have no active pickups. Check the recommended requests to find work!
+                    <p className="text-sm">{t("dash.noJobs")}</p>
+                    <Link href="/picker/nearby-requests">
+                      <Button className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold">
+                        {lang === "hi" ? "नजदीकी पिकअप खोजें" : "Explore Nearby Radar"}
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ) : (
                 acceptedPickups.map(req => (
-                  <Card key={req.id} className="overflow-hidden border-l-4 border-l-blue-500">
-                    <CardContent className="p-0">
-                      <div className="p-5 flex flex-col sm:flex-row justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-bold text-lg">{req.generatorName}</h4>
-                            <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">En Route</Badge>
+                  <Card key={req.id} className="overflow-hidden border-slate-200 border-l-4 border-l-blue-600 bg-white shadow-xs rounded-2xl">
+                    <CardContent className="p-5">
+                      <div className="flex flex-col sm:flex-row justify-between gap-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-bold text-base text-slate-900">{req.generatorName}</h4>
+                            <Badge variant="outline" className="text-blue-700 border-blue-200 bg-blue-50 text-[11px] font-semibold">
+                              {lang === "hi" ? "रास्ते में" : "En Route"}
+                            </Badge>
+                            <button
+                              onClick={() => handleSpeakCard(req)}
+                              className="p-1.5 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+                              title="Listen details in Hindi"
+                            >
+                              <Volume2 className="h-4 w-4" />
+                            </button>
                           </div>
-                          <div className="space-y-1 mb-4">
-                            <div className="text-sm flex items-center text-slate-600">
-                              <MapPin className="h-4 w-4 mr-2 text-slate-400" /> {req.address}
+                          
+                          <div className="space-y-1 text-xs text-slate-600">
+                            <div className="flex items-center">
+                              <MapPin className="h-3.5 w-3.5 mr-1.5 text-slate-400 shrink-0" /> {req.address}
                             </div>
-                            <div className="text-sm flex items-center text-slate-600">
-                              <Clock className="h-4 w-4 mr-2 text-slate-400" /> {req.preferredTime}
+                            <div className="flex items-center">
+                              <Clock className="h-3.5 w-3.5 mr-1.5 text-slate-400 shrink-0" /> {req.preferredTime}
                             </div>
                           </div>
-                          <div className="bg-slate-50 p-2 rounded inline-block">
-                            <span className="text-xs font-semibold text-slate-500 uppercase">Items:</span>
-                            <span className="text-sm font-medium ml-2">{req.wasteType} ({req.estimatedWeight} kg)</span>
+
+                          <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 inline-flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-slate-500 uppercase">{lang === "hi" ? "सामग्री:" : "Items:"}</span>
+                            <span className="text-xs font-semibold text-slate-800">{req.wasteType} ({req.estimatedWeight} kg)</span>
                           </div>
                         </div>
-                        <div className="flex flex-col items-start sm:items-end justify-between border-t sm:border-t-0 pt-4 sm:pt-0">
-                          <div className="text-left sm:text-right mb-4">
-                            <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Expected Payout</div>
-                            <div className="text-2xl font-bold text-green-600 flex items-center justify-start sm:justify-end">
-                              ₹{req.estimatedPrice.toFixed(0)}
+
+                        <div className="flex flex-col items-start sm:items-end justify-between border-t sm:border-t-0 pt-3 sm:pt-0 gap-3">
+                          <div className="text-left sm:text-right">
+                            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{t("dash.expectedPayout")}</div>
+                            <div className="text-2xl font-black text-emerald-600">
+                              ₹{(req.finalPrice || req.estimatedPrice || req.payoutAmount).toFixed(0)}
                             </div>
                           </div>
-                          <Button onClick={() => markCompleted(req.id)} className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
-                            <CheckCircle2 className="mr-2 h-4 w-4" /> Mark as Completed
-                          </Button>
+
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => openWhatsAppModal(req)}
+                              className="rounded-xl border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs font-semibold"
+                            >
+                              <MessageCircle className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                              WhatsApp
+                            </Button>
+                            <Button 
+                              onClick={() => markCompleted(req.id)} 
+                              size="sm"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs"
+                            >
+                              <CheckCircle2 className="mr-1.5 h-4 w-4" /> {t("dash.markCompleted")}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -241,51 +414,72 @@ export default function PickerDashboard() {
         {/* Right Sidebar: Opportunity Score & Nearby Requests */}
         <div className="space-y-6">
           
-          <Card className="bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <StarIcon className="h-32 w-32" />
+          {/* Fair Opportunity Score Card */}
+          <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white shadow-md rounded-2xl relative overflow-hidden border-0">
+            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+              <Sparkles className="h-32 w-32" />
             </div>
             <CardContent className="p-6 relative z-10">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-lg flex items-center gap-2">
-                  <StarIcon className="h-5 w-5 text-yellow-400 fill-yellow-400" /> 
-                  Fair Opportunity Score
+                <h3 className="font-bold text-base flex items-center gap-2 text-amber-300">
+                  <Sparkles className="h-4 w-4 fill-amber-300" /> 
+                  {t("dash.opportunityScore")}
                 </h3>
-                <span className="text-2xl font-black text-yellow-400">{pickerProfile.fairnessPriorityScore}</span>
+                <span className="text-2xl font-black text-amber-400">{pickerProfile.fairnessPriorityScore}</span>
               </div>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                Because your earnings are currently below the daily target, the ReCircle algorithm is prioritizing you for incoming high-value requests in your area!
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {t("dash.opportunityDesc")}
               </p>
+              <div className="mt-4 pt-3 border-t border-slate-700/60 flex items-center justify-between text-[11px] text-slate-400">
+                <span>{lang === "hi" ? "अल्गोरिदम स्थिति: सक्रिय" : "Fair Algorithm: Active"}</span>
+                <span className="text-emerald-400 font-semibold">{lang === "hi" ? "प्राथमिकता प्राप्त" : "High Priority"}</span>
+              </div>
             </CardContent>
           </Card>
 
-          <div>
+          {/* Recommended Nearby Card */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-slate-900">Recommended Nearby</h3>
-              <Link href="/picker/nearby-requests" className="text-sm text-blue-600 font-medium hover:underline">View map</Link>
+              <h3 className="text-base font-bold text-slate-900">{t("dash.recommendedNearby")}</h3>
+              <Link href="/picker/nearby-requests" className="text-xs text-emerald-700 font-bold hover:underline flex items-center gap-1">
+                {t("dash.viewMap")} <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               {nearbyRequests.length === 0 ? (
-                <div className="text-sm text-slate-500 p-4 border rounded-lg text-center bg-slate-50">
-                  No pending requests in your area right now.
+                <div className="text-xs text-slate-500 p-4 border rounded-xl text-center bg-slate-50">
+                  {lang === "hi" ? "फिलहाल आपके क्षेत्र में कोई लंबित अनुरोध नहीं है।" : "No pending requests in your area right now."}
                 </div>
               ) : (
-                nearbyRequests.map(req => (
-                  <Card key={req.id} className="hover:border-slate-400 transition-colors">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="font-semibold">{req.wasteType}</div>
-                        <div className="font-bold text-green-600">₹{req.estimatedPrice.toFixed(0)}</div>
+                nearbyRequests.slice(0, 3).map(req => (
+                  <Card key={req.id} className="hover:border-emerald-400 transition-colors border-slate-200 rounded-xl shadow-none bg-slate-50/50">
+                    <CardContent className="p-3.5">
+                      <div className="flex justify-between items-start mb-1.5">
+                        <div className="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                          <span>{req.wasteType}</span>
+                          <button
+                            onClick={() => handleSpeakCard(req)}
+                            className="p-1 rounded bg-white text-slate-600 hover:text-emerald-600 border border-slate-200"
+                            title="Listen"
+                          >
+                            <Volume2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <div className="font-bold text-emerald-600 text-sm">₹{req.estimatedPrice.toFixed(0)}</div>
                       </div>
                       <div className="text-xs text-slate-500 flex items-center mb-1">
-                        <MapPin className="h-3 w-3 mr-1" /> {req.address}
+                        <MapPin className="h-3 w-3 mr-1 text-slate-400 shrink-0" /> {req.address}
                       </div>
                       <div className="text-xs text-slate-500 flex items-center mb-3">
-                        <Clock className="h-3 w-3 mr-1" /> {req.preferredTime}
+                        <Clock className="h-3 w-3 mr-1 text-slate-400 shrink-0" /> {req.preferredTime}
                       </div>
-                      <Button variant="outline" size="sm" className="w-full" onClick={() => acceptPickup(req.id)}>
-                        Accept Request
+                      <Button 
+                        size="sm" 
+                        className="w-full bg-slate-900 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold h-8"
+                        onClick={() => acceptPickup(req.id)}
+                      >
+                        {t("dash.accept")}
                       </Button>
                     </CardContent>
                   </Card>
@@ -296,25 +490,24 @@ export default function PickerDashboard() {
         </div>
 
       </div>
-    </div>
-  );
-}
 
-function StarIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
+      {/* Floating Emergency SOS Button */}
+      <SOSFloatingButton />
+
+      {/* WhatsApp Simulator Modal */}
+      {whatsAppModalOpen && activeWhatsAppPickup && (
+        <WhatsAppSimulatorModal
+          isOpen={whatsAppModalOpen}
+          onClose={() => setWhatsAppModalOpen(false)}
+          pickupId={activeWhatsAppPickup.id}
+          recipientName={activeWhatsAppPickup.generatorName || "Citizen"}
+          recipientPhone="+91 98765 43210"
+          pickupAddress={activeWhatsAppPickup.address}
+          wasteType={activeWhatsAppPickup.wasteType}
+          weightKg={activeWhatsAppPickup.estimatedWeight}
+          amount={activeWhatsAppPickup.finalPrice || activeWhatsAppPickup.estimatedPrice || activeWhatsAppPickup.payoutAmount}
+        />
+      )}
+    </div>
   );
 }

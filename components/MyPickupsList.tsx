@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { User, MOCK_REQUESTS, PickupRequest } from "@/lib/mock-data";
+import { useLanguage } from "@/lib/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ type Props = {
 type TabType = "upcoming" | "ongoing" | "completed" | "cancelled" | "disputed";
 
 export default function MyPickupsList({ user }: Props) {
+  const { lang, t, speak } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>("upcoming");
   const [refresh, setRefresh] = useState(0); // To trigger re-renders
   
@@ -74,7 +76,6 @@ export default function MyPickupsList({ user }: Props) {
     e.preventDefault();
     if (!activeDisputePickup) return;
     
-    // Add to MOCK_DISPUTES
     import("@/lib/mock-data").then(({ MOCK_DISPUTES }) => {
       MOCK_DISPUTES.push({
         id: `d${Date.now()}`,
@@ -86,7 +87,8 @@ export default function MyPickupsList({ user }: Props) {
         createdAt: new Date().toISOString()
       });
       updateStatus(activeDisputePickup.id, "disputed");
-      toast.success("Dispute submitted successfully to the Admin team.");
+      const msg = lang === "hi" ? "शिकायत सफलतापूर्वक एडमिन टीम को भेज दी गई।" : "Dispute submitted successfully to the Admin team.";
+      toast.success(msg);
       setDisputeModalOpen(false);
     });
   };
@@ -109,7 +111,7 @@ export default function MyPickupsList({ user }: Props) {
     e.preventDefault();
     if (!activePickupForCompletion) return;
     if (!paymentConfirmed) {
-      toast.error("You must confirm payment to complete the pickup.");
+      toast.error(lang === "hi" ? "कृपया काम पूरा करने के लिए भुगतान की पुष्टि करें।" : "You must confirm payment to complete the pickup.");
       return;
     }
 
@@ -123,18 +125,20 @@ export default function MyPickupsList({ user }: Props) {
       req.finalPrice = req.estimatedPrice * weightRatio;
       req.payoutAmount = req.finalPrice;
       
-      toast.success("Pickup completed and payment confirmed!");
+      const msg = lang === "hi" ? "पिकअप पूरा हुआ और भुगतान की पुष्टि हो गई!" : "Pickup completed and payment confirmed!";
+      speak(msg);
+      toast.success(msg);
       setCompletionModalOpen(false);
       setRefresh(prev => prev + 1);
     }
   };
 
   const tabs: { id: TabType, label: string, icon: any }[] = [
-    { id: "upcoming", label: "Upcoming", icon: Clock },
-    { id: "ongoing", label: "Ongoing", icon: Truck },
-    { id: "completed", label: "Completed", icon: CheckCircle },
-    { id: "cancelled", label: "Cancelled", icon: XCircle },
-    { id: "disputed", label: "Disputed", icon: AlertTriangle },
+    { id: "upcoming", label: lang === "hi" ? "आगामी (Upcoming)" : "Upcoming", icon: Clock },
+    { id: "ongoing", label: lang === "hi" ? "प्रगति पर (Ongoing)" : "Ongoing", icon: Truck },
+    { id: "completed", label: lang === "hi" ? "पूरे हुए (Completed)" : "Completed", icon: CheckCircle },
+    { id: "cancelled", label: lang === "hi" ? "रद्द (Cancelled)" : "Cancelled", icon: XCircle },
+    { id: "disputed", label: lang === "hi" ? "विवादित (Disputed)" : "Disputed", icon: AlertTriangle },
   ];
 
   return (
@@ -146,13 +150,13 @@ export default function MyPickupsList({ user }: Props) {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap text-xs font-bold transition-all ${
               activeTab === tab.id 
-                ? "bg-slate-900 text-white shadow-sm" 
+                ? "bg-slate-900 text-white shadow-xs" 
                 : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
             }`}
           >
-            <tab.icon className={`h-4 w-4 ${activeTab === tab.id ? 'text-white' : 'text-slate-400'}`} />
+            <tab.icon className={`h-4 w-4 ${activeTab === tab.id ? 'text-emerald-400' : 'text-slate-400'}`} />
             {tab.label}
           </button>
         ))}
@@ -161,27 +165,31 @@ export default function MyPickupsList({ user }: Props) {
       {/* Results */}
       <div className="space-y-4">
         {filteredRequests.length === 0 ? (
-          <Card className="border-dashed bg-transparent shadow-none">
-            <CardContent className="p-12 text-center text-slate-500">
-              No {activeTab} pickups found.
+          <Card className="border-dashed border-2 rounded-2xl bg-white">
+            <CardContent className="p-12 text-center text-slate-500 text-xs font-medium">
+              {lang === "hi" ? `कोई ${activeTab} पिकअप नहीं मिला।` : `No ${activeTab} pickups found.`}
             </CardContent>
           </Card>
         ) : (
           filteredRequests.map(req => (
-            <Card key={req.id} className="overflow-hidden">
+            <Card key={req.id} className="overflow-hidden border-slate-200 rounded-2xl bg-white shadow-xs">
               <CardContent className="p-0">
-                <div className="bg-slate-50 border-b p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div className="bg-slate-50 border-b border-slate-100 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <div className="flex items-center gap-2">
                     <Badge variant={
                       req.status === 'completed' ? 'success' : 
                       req.status === 'disputed' ? 'destructive' : 
                       req.status === 'cancelled' ? 'secondary' : 'default'
-                    } className="uppercase tracking-wider">
-                      {req.status.replace("_", " ")}
+                    } className="uppercase tracking-wider text-[10px] rounded-lg">
+                      {req.status === 'completed' ? (lang === "hi" ? "पूर्ण" : "Completed") :
+                       req.status === 'accepted' ? (lang === "hi" ? "स्वीकृत" : "Accepted") :
+                       req.status === 'on_the_way' ? (lang === "hi" ? "रास्ते में" : "On The Way") :
+                       req.status === 'picked_up' ? (lang === "hi" ? "कचरा उठाया गया" : "Picked Up") :
+                       req.status.replace("_", " ")}
                     </Badge>
-                    <span className="text-sm font-semibold text-slate-900">{req.wasteType}</span>
+                    <span className="text-sm font-bold text-slate-900">{req.wasteType}</span>
                   </div>
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-2xl font-black text-emerald-600">
                     ₹{(req.finalPrice || req.estimatedPrice).toFixed(0)}
                   </div>
                 </div>
@@ -189,50 +197,52 @@ export default function MyPickupsList({ user }: Props) {
                 <div className="p-5 grid sm:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
-                      <UserIcon className="h-5 w-5 text-slate-400 mt-0.5" />
+                      <UserIcon className="h-4 w-4 text-slate-400 mt-0.5" />
                       <div>
-                        <div className="text-xs text-slate-500 uppercase tracking-wider">Parties</div>
-                        <div className="text-sm">
-                          <span className="font-medium text-slate-900">Generator:</span> {req.generatorName}
+                        <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{lang === "hi" ? "पक्षकार" : "Parties"}</div>
+                        <div className="text-xs">
+                          <span className="font-medium text-slate-500">{lang === "hi" ? "नागरिक:" : "Generator:"}</span> <strong className="text-slate-800">{req.generatorName}</strong>
                         </div>
-                        <div className="text-sm">
-                          <span className="font-medium text-slate-900">Picker:</span> {req.pickerName || "Not assigned yet"}
+                        <div className="text-xs">
+                          <span className="font-medium text-slate-500">{lang === "hi" ? "सफाई मित्र:" : "Picker:"}</span> <strong className="text-slate-800">{req.pickerName || (lang === "hi" ? "असाइन नहीं हुआ" : "Not assigned yet")}</strong>
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <MapPin className="h-5 w-5 text-slate-400 mt-0.5" />
+                      <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
                       <div>
-                        <div className="text-xs text-slate-500 uppercase tracking-wider">Address & Time</div>
-                        <div className="text-sm font-medium text-slate-900">{req.address}</div>
-                        <div className="text-sm text-slate-600">{req.preferredTime}</div>
+                        <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{lang === "hi" ? "पता व समय" : "Address & Time"}</div>
+                        <div className="text-xs font-semibold text-slate-900">{req.address}</div>
+                        <div className="text-xs text-slate-500">{req.preferredTime}</div>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
-                      <Scale className="h-5 w-5 text-slate-400 mt-0.5" />
+                      <Scale className="h-4 w-4 text-slate-400 mt-0.5" />
                       <div>
-                        <div className="text-xs text-slate-500 uppercase tracking-wider">Weight</div>
-                        <div className="text-sm">
-                          <span className="text-slate-600">Estimated:</span> <span className="font-medium text-slate-900">{req.estimatedWeight} kg</span>
+                        <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{lang === "hi" ? "वजन (Weight)" : "Weight"}</div>
+                        <div className="text-xs">
+                          <span className="text-slate-500">{lang === "hi" ? "अनुमानित:" : "Estimated:"}</span> <strong className="text-slate-800">{req.estimatedWeight} kg</strong>
                         </div>
                         {req.finalWeight && (
-                          <div className="text-sm">
-                            <span className="text-slate-600">Final:</span> <span className="font-medium text-slate-900">{req.finalWeight} kg</span>
+                          <div className="text-xs">
+                            <span className="text-slate-500">{lang === "hi" ? "अंतिम वजन:" : "Final:"}</span> <strong className="text-emerald-700">{req.finalWeight} kg</strong>
                           </div>
                         )}
                       </div>
                     </div>
 
                     <div className="flex items-start gap-3">
-                      <Banknote className="h-5 w-5 text-slate-400 mt-0.5" />
+                      <Banknote className="h-4 w-4 text-slate-400 mt-0.5" />
                       <div>
-                        <div className="text-xs text-slate-500 uppercase tracking-wider">Payment Status</div>
-                        <div className="text-sm font-medium text-slate-900">
-                          {req.status === 'completed' ? `Paid (${req.paymentMode?.toUpperCase() || 'UPI'})` : 'Pending Completion'}
+                        <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{lang === "hi" ? "भुगतान स्थिति" : "Payment Status"}</div>
+                        <div className="text-xs font-semibold text-slate-900">
+                          {req.status === 'completed' 
+                            ? (lang === "hi" ? `भुगतान हो चुका (${req.paymentMode?.toUpperCase() || 'UPI'})` : `Paid (${req.paymentMode?.toUpperCase() || 'UPI'})`)
+                            : (lang === "hi" ? "कार्य पूर्ण होने पर" : "Pending Completion")}
                         </div>
                       </div>
                     </div>
@@ -241,39 +251,39 @@ export default function MyPickupsList({ user }: Props) {
 
                 {/* Shared Action for completed */}
                 {req.status === "completed" && (
-                  <div className="bg-slate-50 p-4 border-t flex flex-wrap gap-2 justify-between items-center">
+                  <div className="bg-slate-50 p-4 border-t border-slate-100 flex flex-wrap gap-2 justify-between items-center">
                     {!isPicker && (
-                      <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => openDisputeModal(req)}>
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        Raise Dispute
+                      <Button size="sm" variant="ghost" className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 text-xs rounded-xl" onClick={() => openDisputeModal(req)}>
+                        <AlertTriangle className="h-3.5 w-3.5 mr-1.5" />
+                        {t("btn.dispute")}
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" className="ml-auto" onClick={() => openReceipt(req)}>
-                      View Digital Receipt
+                    <Button size="sm" variant="outline" className="ml-auto rounded-xl text-xs font-semibold" onClick={() => openReceipt(req)}>
+                      {t("btn.viewReceipt")}
                     </Button>
                   </div>
                 )}
 
                 {/* Waste-Picker Actions */}
                 {isPicker && req.status !== "completed" && req.status !== "cancelled" && req.status !== "disputed" && (
-                  <div className="bg-slate-50 p-4 border-t flex flex-wrap gap-2">
+                  <div className="bg-slate-50 p-4 border-t border-slate-100 flex flex-wrap gap-2">
                     {req.status === "accepted" && (
-                      <Button size="sm" onClick={() => updateStatus(req.id, "on_the_way")} className="bg-blue-600 hover:bg-blue-700">
-                        Mark On The Way
+                      <Button size="sm" onClick={() => updateStatus(req.id, "on_the_way")} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold">
+                        {lang === "hi" ? "रास्ते में चिह्नित करें" : "Mark On The Way"}
                       </Button>
                     )}
                     {req.status === "on_the_way" && (
-                      <Button size="sm" onClick={() => updateStatus(req.id, "picked_up")} className="bg-purple-600 hover:bg-purple-700">
-                        Mark Picked Up
+                      <Button size="sm" onClick={() => updateStatus(req.id, "picked_up")} className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold">
+                        {lang === "hi" ? "कचरा उठाया गया" : "Mark Picked Up"}
                       </Button>
                     )}
                     {(req.status === "picked_up" || req.status === "on_the_way" || req.status === "accepted") && (
-                      <Button size="sm" onClick={() => openCompletionModal(req)} className="bg-green-600 hover:bg-green-700">
-                        Complete & Confirm Weight
+                      <Button size="sm" onClick={() => openCompletionModal(req)} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold">
+                        {lang === "hi" ? "वजन दर्ज करें व पूरा करें" : "Complete & Confirm Weight"}
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => updateStatus(req.id, "cancelled")}>
-                      Cancel
+                    <Button size="sm" variant="outline" className="text-rose-600 border-rose-200 hover:bg-rose-50 rounded-xl text-xs font-semibold" onClick={() => updateStatus(req.id, "cancelled")}>
+                      {t("btn.cancel")}
                     </Button>
                   </div>
                 )}
@@ -285,16 +295,22 @@ export default function MyPickupsList({ user }: Props) {
 
       {/* Completion Modal */}
       {completionModalOpen && activePickupForCompletion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <Card className="w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95">
-            <CardHeader>
-              <CardTitle>Complete Pickup</CardTitle>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <Card className="w-full max-w-md shadow-2xl rounded-3xl bg-white">
+            <CardHeader className="p-5 pb-3 border-b">
+              <CardTitle className="text-base font-bold text-slate-900">
+                {lang === "hi" ? "पिकअप कार्य पूर्ण करें" : "Complete Pickup"}
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-5">
               <form onSubmit={handleCompletePickup} className="space-y-4">
                 <div>
-                  <label className="text-sm font-semibold mb-1 block">Final Weight (kg)</label>
-                  <p className="text-xs text-slate-500 mb-2">Estimated weight was {activePickupForCompletion.estimatedWeight} kg</p>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                    {lang === "hi" ? "अंतिम वास्तविक वजन (kg)" : "Final Weight (kg)"}
+                  </label>
+                  <p className="text-xs text-slate-500 mb-2">
+                    {lang === "hi" ? `अनुमानित वजन ${activePickupForCompletion.estimatedWeight} kg था` : `Estimated weight was ${activePickupForCompletion.estimatedWeight} kg`}
+                  </p>
                   <Input 
                     type="number" 
                     min="0.1" 
@@ -302,54 +318,51 @@ export default function MyPickupsList({ user }: Props) {
                     value={finalWeight} 
                     onChange={(e) => setFinalWeight(parseFloat(e.target.value) || "")} 
                     required 
+                    className="rounded-xl font-bold text-base h-11"
                   />
                 </div>
                 
                 <div>
-                  <label className="text-sm font-semibold mb-1 block">Payment Mode</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                    {lang === "hi" ? "भुगतान का माध्यम" : "Payment Mode"}
+                  </label>
                   <div className="flex gap-4">
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
                       <input type="radio" name="pmode" value="upi" checked={paymentMode === "upi"} onChange={() => setPaymentMode("upi")} />
-                      UPI (Digital)
+                      UPI ({lang === "hi" ? "डिजिटल" : "Digital"})
                     </label>
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
                       <input type="radio" name="pmode" value="cash" checked={paymentMode === "cash"} onChange={() => setPaymentMode("cash")} />
-                      Cash
+                      {lang === "hi" ? "नकद (Cash)" : "Cash"}
                     </label>
                   </div>
                 </div>
 
-                <div className="bg-green-50 p-3 rounded border border-green-200">
+                <div className="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200">
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input 
                       type="checkbox" 
-                      className="mt-1 h-4 w-4 text-green-600 rounded border-gray-300 focus:ring-green-500" 
+                      className="mt-1 h-4 w-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" 
                       checked={paymentConfirmed}
                       onChange={(e) => setPaymentConfirmed(e.target.checked)}
                     />
                     <div>
-                      <div className="text-sm font-bold text-green-900">Payment Confirmed</div>
-                      <div className="text-xs text-green-700">I have received the {paymentMode.toUpperCase()} payment for this transaction securely.</div>
+                      <div className="text-xs font-bold text-emerald-900">{lang === "hi" ? "भुगतान प्राप्त हुआ" : "Payment Confirmed"}</div>
+                      <div className="text-[11px] text-emerald-700">
+                        {lang === "hi" 
+                          ? `मुझे इस कार्य के लिए ${paymentMode.toUpperCase()} भुगतान सुरक्षित रूप से प्राप्त हो गया है।`
+                          : `I have received the ${paymentMode.toUpperCase()} payment for this transaction securely.`}
+                      </div>
                     </div>
                   </label>
                 </div>
 
-                <div>
-                  <label className="text-sm font-semibold mb-1 block">Additional Notes</label>
-                  <textarea 
-                    className="flex min-h-[80px] w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-                    placeholder="E.g., Great generator, very clean sorting."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </div>
-
-                <div className="pt-4 flex gap-3">
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => setCompletionModalOpen(false)}>
-                    Cancel
+                <div className="pt-2 flex gap-3">
+                  <Button type="button" variant="outline" className="flex-1 rounded-xl text-xs font-semibold" onClick={() => setCompletionModalOpen(false)}>
+                    {t("btn.cancel")}
                   </Button>
-                  <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700">
-                    Finish Job
+                  <Button type="submit" className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold">
+                    {lang === "hi" ? "कार्य समाप्त करें" : "Finish Job"}
                   </Button>
                 </div>
               </form>
@@ -360,58 +373,53 @@ export default function MyPickupsList({ user }: Props) {
 
       {/* Dispute Modal */}
       {disputeModalOpen && activeDisputePickup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <Card className="w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95">
-            <CardHeader className="bg-red-50 border-b border-red-100">
-              <CardTitle className="text-red-900 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-                Raise a Dispute
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <Card className="w-full max-w-md shadow-2xl rounded-3xl bg-white">
+            <CardHeader className="bg-rose-50 border-b border-rose-100 p-5">
+              <CardTitle className="text-rose-900 flex items-center gap-2 text-base font-bold">
+                <AlertTriangle className="h-5 w-5 text-rose-600" />
+                {t("btn.dispute")}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-5">
               <form onSubmit={handleSubmitDispute} className="space-y-4">
                 <div>
-                  <label className="text-sm font-semibold mb-1 block">Reason for Dispute</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                    {lang === "hi" ? "विवाद का कारण" : "Reason for Dispute"}
+                  </label>
                   <select 
-                    className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                    className="flex h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-400"
                     value={disputeReason}
                     onChange={(e) => setDisputeReason(e.target.value)}
                     required
                   >
-                    <option value="">Select a reason...</option>
-                    <option value="Wrong weight">Wrong weight</option>
-                    <option value="Payment not received">Payment not received</option>
-                    <option value="Wrong waste type">Wrong waste type</option>
-                    <option value="Pickup cancelled unfairly">Pickup cancelled unfairly</option>
-                    <option value="Unsafe behavior">Unsafe behavior</option>
-                    <option value="Late pickup">Late pickup</option>
+                    <option value="">{lang === "hi" ? "कारण चुनें..." : "Select a reason..."}</option>
+                    <option value="Wrong weight">{lang === "hi" ? "गलत वजन (Wrong weight)" : "Wrong weight"}</option>
+                    <option value="Payment not received">{lang === "hi" ? "भुगतान नहीं मिला (Payment not received)" : "Payment not received"}</option>
+                    <option value="Wrong waste type">{lang === "hi" ? "कचरा प्रकार में अंतर (Wrong waste type)" : "Wrong waste type"}</option>
+                    <option value="Unsafe behavior">{lang === "hi" ? "अनुचित व्यवहार (Unsafe behavior)" : "Unsafe behavior"}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-sm font-semibold mb-1 block">Description</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">
+                    {lang === "hi" ? "विस्तृत विवरण" : "Description"}
+                  </label>
                   <textarea 
-                    className="flex min-h-[80px] w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
-                    placeholder="Provide details about the issue..."
+                    className="flex min-h-[80px] w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-rose-400"
+                    placeholder={lang === "hi" ? "समस्या का विवरण दर्ज करें..." : "Provide details about the issue..."}
                     value={disputeDesc}
                     onChange={(e) => setDisputeDesc(e.target.value)}
                     required
                   />
                 </div>
 
-                <div>
-                  <label className="text-sm font-semibold mb-1 block">Upload Proof (Optional)</label>
-                  <div className="border border-dashed border-slate-300 rounded-lg p-4 text-center bg-slate-50 text-slate-500 cursor-pointer hover:bg-slate-100">
-                    <span className="text-sm">Click to upload photo or screenshot</span>
-                  </div>
-                </div>
-
-                <div className="pt-4 flex gap-3">
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => setDisputeModalOpen(false)}>
-                    Cancel
+                <div className="pt-2 flex gap-3">
+                  <Button type="button" variant="outline" className="flex-1 rounded-xl text-xs font-semibold" onClick={() => setDisputeModalOpen(false)}>
+                    {t("btn.cancel")}
                   </Button>
-                  <Button type="submit" className="flex-1 bg-red-600 hover:bg-red-700">
-                    Submit Dispute
+                  <Button type="submit" className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold">
+                    {lang === "hi" ? "शिकायत दर्ज करें" : "Submit Dispute"}
                   </Button>
                 </div>
               </form>

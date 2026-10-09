@@ -82,13 +82,13 @@ export default function FairnessAnalytics() {
   
   MOCK_REQUESTS.forEach(req => {
     if (req.status === "disputed") {
-      flaggedMatches.push({ id: req.id, picker: req.pickerName || "Unassigned", generator: req.generatorName, issue: "Active Dispute", severity: "high" });
+      flaggedMatches.push({ id: req.id, picker: req.pickerName || "Unassigned", generator: req.generatorName || "Unknown Generator", issue: "Active Dispute", severity: "high" });
     }
     else if (req.finalPrice && req.finalPrice < req.estimatedPrice * 0.7) {
-      flaggedMatches.push({ id: req.id, picker: req.pickerName || "Unknown", generator: req.generatorName, issue: "Payment severely below estimate", severity: "high" });
+      flaggedMatches.push({ id: req.id, picker: req.pickerName || "Unknown", generator: req.generatorName || "Unknown Generator", issue: "Payment severely below estimate", severity: "high" });
     }
     else if (req.finalWeight && req.finalPrice && (req.finalPrice / req.finalWeight) < 5) {
-      flaggedMatches.push({ id: req.id, picker: req.pickerName || "Unknown", generator: req.generatorName, issue: "Final payment doesn't match weight", severity: "medium" });
+      flaggedMatches.push({ id: req.id, picker: req.pickerName || "Unknown", generator: req.generatorName || "Unknown Generator", issue: "Final payment doesn't match weight", severity: "medium" });
     }
   });
 

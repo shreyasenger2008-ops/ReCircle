@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { LanguageProvider } from "@/lib/language-context";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
@@ -19,7 +20,9 @@ export default function RootLayout({
         className={`antialiased bg-slate-50 min-h-screen`}
       >
         <AuthProvider>
-          {children}
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
         </AuthProvider>
         <Toaster position="bottom-right" richColors />
       </body>

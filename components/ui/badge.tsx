@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { variant?: "default" | "success" | "warning" | "secondary" }>(
+const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { variant?: "default" | "success" | "warning" | "secondary" | "destructive" | "outline" }>(
   ({ className, variant = "default", ...props }, ref) => {
     return (
       <div
@@ -13,6 +13,8 @@ const Badge = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEleme
             "border-transparent bg-slate-100 text-slate-900": variant === "secondary",
             "border-transparent bg-green-500 text-white": variant === "success",
             "border-transparent bg-yellow-500 text-white": variant === "warning",
+            "border-transparent bg-red-500 text-white": variant === "destructive",
+            "border-slate-300 text-slate-700 bg-transparent": variant === "outline",
           },
           className
         )}

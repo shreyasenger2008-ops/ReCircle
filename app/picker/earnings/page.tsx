@@ -1,9 +1,11 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
+import { useLanguage } from "@/lib/language-context";
 import { MOCK_PICKERS, MOCK_PAYMENTS, MOCK_REQUESTS } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Banknote, TrendingUp, Calendar, Wallet, CreditCard, Clock, History, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Banknote, TrendingUp, Calendar, Wallet, History } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -12,22 +14,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line
 } from "recharts";
-
-const chartData = [
-  { name: "Mon", earnings: 450 },
-  { name: "Tue", earnings: 600 },
-  { name: "Wed", earnings: 320 },
-  { name: "Thu", earnings: 850 },
-  { name: "Fri", earnings: 500 },
-  { name: "Sat", earnings: 920 },
-  { name: "Sun", earnings: 400 },
-];
+import SOSFloatingButton from "@/components/SOSFloatingButton";
 
 export default function EarningsDashboard() {
   const { user } = useAuth();
+  const { lang, t } = useLanguage();
 
   if (!user || user.role !== "picker") {
     return <div className="p-8">Unauthorized. Please log in as a Waste-Picker.</div>;
@@ -38,11 +30,21 @@ export default function EarningsDashboard() {
     return <div className="p-8">Picker profile not found.</div>;
   }
 
+  const chartData = [
+    { name: lang === "hi" ? "सोम" : "Mon", earnings: 450 },
+    { name: lang === "hi" ? "मंगल" : "Tue", earnings: 600 },
+    { name: lang === "hi" ? "बुध" : "Wed", earnings: 320 },
+    { name: lang === "hi" ? "गुरु" : "Thu", earnings: 850 },
+    { name: lang === "hi" ? "शुक्र" : "Fri", earnings: 500 },
+    { name: lang === "hi" ? "शनि" : "Sat", earnings: 920 },
+    { name: lang === "hi" ? "रवि" : "Sun", earnings: 400 },
+  ];
+
   // Calculate Metrics
   const dailyEarnings = pickerProfile.dailyEarnings;
   const weeklyEarnings = pickerProfile.weeklyEarnings;
-  const monthlyEarnings = weeklyEarnings * 4.2; // Rough mock calculation
-  const totalCompletedPickups = pickerProfile.completedJobsToday + 24; // Mock total historical jobs
+  const monthlyEarnings = weeklyEarnings * 4.2;
+  const totalCompletedPickups = pickerProfile.completedJobsToday + 24;
   const avgEarnings = totalCompletedPickups > 0 ? (weeklyEarnings * 2) / totalCompletedPickups : 0;
 
   // Pending Payments Logic
@@ -53,35 +55,38 @@ export default function EarningsDashboard() {
   
   const pendingPaymentsAmount = Math.max(0, totalEarnedFromPickups - myCompletedPaymentsTotal);
 
-  // Extend mock history just for UI display
   const paymentHistory = [
     ...myCompletedPayments,
     { id: "mock1", pickupId: "req-mock-1", payerId: "g2", receiverId: user.id, amount: 450, method: "cash", status: "completed", paidAt: new Date(Date.now() - 86400000 * 1).toISOString() },
     { id: "mock2", pickupId: "req-mock-2", payerId: "g1", receiverId: user.id, amount: 320, method: "upi", status: "completed", paidAt: new Date(Date.now() - 86400000 * 2).toISOString() },
     { id: "mock3", pickupId: "req-mock-3", payerId: "g3", receiverId: user.id, amount: 600, method: "upi", status: "completed", paidAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  ].sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
+  ].sort((a, b) => new Date(b.paidAt || 0).getTime() - new Date(a.paidAt || 0).getTime());
 
   return (
     <div className="space-y-6 pb-20 max-w-6xl mx-auto">
       
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900">Earnings Dashboard</h2>
-        <p className="text-slate-500">Track your daily income, payouts, and financial growth.</p>
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+        <h2 className="text-2xl font-bold text-slate-900">{t("nav.earnings")}</h2>
+        <p className="text-sm text-slate-500 mt-0.5">
+          {lang === "hi" ? "अपनी दैनिक आय, भुगतान और वित्तीय प्रगति का ब्योरा देखें।" : "Track your daily income, payouts, and financial growth."}
+        </p>
       </div>
 
       {/* Income Improvement Insight Card */}
-      <Card className="bg-gradient-to-r from-green-600 to-emerald-500 text-white shadow-md border-0">
-        <CardContent className="p-6 flex items-start gap-4">
-          <div className="bg-white/20 p-3 rounded-full hidden sm:block">
+      <Card className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white shadow-md border-0 rounded-2xl">
+        <CardContent className="p-5 sm:p-6 flex items-start gap-4">
+          <div className="bg-white/20 p-3 rounded-2xl hidden sm:block">
             <TrendingUp className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-lg mb-1 flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 sm:hidden" /> Great Progress!
+            <h3 className="font-bold text-base mb-1 flex items-center gap-2 text-emerald-300">
+              <TrendingUp className="h-5 w-5 sm:hidden" /> {lang === "hi" ? "शानदार प्रगति!" : "Great Progress!"}
             </h3>
-            <p className="text-emerald-50 text-sm sm:text-base leading-relaxed">
-              Your income this week is <strong>18% higher</strong> because of fair route grouping and transparent pricing.
+            <p className="text-emerald-50 text-xs sm:text-sm leading-relaxed">
+              {lang === "hi"
+                ? "फेयर फ्लोर रेट और डाउनहिल रूट क्लस्टरिंग के कारण इस सप्ताह आपकी आय 18% अधिक रही है।"
+                : "Your income this week is 18% higher because of fair route grouping and transparent pricing."}
             </p>
           </div>
         </CardContent>
@@ -89,112 +94,119 @@ export default function EarningsDashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="shadow-sm border-slate-200">
+        <Card className="shadow-xs border-slate-200 rounded-2xl bg-white">
           <CardContent className="p-5">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">Today's Earnings</p>
+                <p className="text-xs font-semibold text-slate-500 mb-1">{t("dash.todayEarnings")}</p>
                 <h3 className="text-2xl font-bold text-slate-900">₹{dailyEarnings.toFixed(0)}</h3>
               </div>
-              <Banknote className="h-5 w-5 text-green-500" />
+              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                <Banknote className="h-5 w-5" />
+              </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="shadow-sm border-slate-200">
+        <Card className="shadow-xs border-slate-200 rounded-2xl bg-white">
           <CardContent className="p-5">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">Weekly Earnings</p>
+                <p className="text-xs font-semibold text-slate-500 mb-1">{t("dash.weeklyEarnings")}</p>
                 <h3 className="text-2xl font-bold text-slate-900">₹{weeklyEarnings.toFixed(0)}</h3>
               </div>
-              <Calendar className="h-5 w-5 text-blue-500" />
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                <Calendar className="h-5 w-5" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-slate-200">
+        <Card className="shadow-xs border-slate-200 rounded-2xl bg-white">
           <CardContent className="p-5">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">Monthly (Est)</p>
+                <p className="text-xs font-semibold text-slate-500 mb-1">{lang === "hi" ? "मासिक अनुमानित" : "Monthly (Est)"}</p>
                 <h3 className="text-2xl font-bold text-slate-900">₹{monthlyEarnings.toFixed(0)}</h3>
               </div>
-              <Wallet className="h-5 w-5 text-purple-500" />
+              <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
+                <Wallet className="h-5 w-5" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-slate-200">
+        <Card className="shadow-xs border-slate-200 rounded-2xl bg-white">
           <CardContent className="p-5">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mb-1">Avg / Pickup</p>
+                <p className="text-xs font-semibold text-slate-500 mb-1">{lang === "hi" ? "औसत / पिकअप" : "Avg / Pickup"}</p>
                 <h3 className="text-2xl font-bold text-slate-900">₹{avgEarnings.toFixed(0)}</h3>
               </div>
-              <TrendingUp className="h-5 w-5 text-orange-500" />
+              <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
+                <TrendingUp className="h-5 w-5" />
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        
         {/* Chart Section */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Weekly Income Trend</CardTitle>
-              <CardDescription>Your daily earnings breakdown over the past 7 days.</CardDescription>
+          <Card className="shadow-xs border-slate-200 rounded-2xl bg-white">
+            <CardHeader className="p-5 pb-2">
+              <CardTitle className="text-base font-bold text-slate-900">
+                {lang === "hi" ? "साप्ताहिक आय प्रवृत्ति" : "Weekly Income Trend"}
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                {lang === "hi" ? "पिछले 7 दिनों में आपकी दैनिक कमाई का विवरण" : "Your daily earnings breakdown over the past 7 days."}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="h-72 w-full mt-4">
+            <CardContent className="p-5 pt-0">
+              <div className="h-64 w-full mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(val) => `₹${val}`} />
                     <Tooltip 
-                      cursor={{fill: '#f1f5f9'}}
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                      formatter={(value) => [`₹${value}`, "Earnings"]}
+                      cursor={{fill: '#f8fafc'}}
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      formatter={(value) => [`₹${value}`, lang === "hi" ? "कमाई" : "Earnings"]}
                     />
-                    <Bar dataKey="earnings" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                    <Bar dataKey="earnings" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={44} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
+        </div>
 
-          <Card>
-            <CardHeader className="pb-3 border-b">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <History className="h-5 w-5 text-slate-500" /> 
-                  Payment History
-                </CardTitle>
-              </div>
+        {/* Payment History sidebar */}
+        <div className="space-y-6">
+          <Card className="shadow-xs border-slate-200 rounded-2xl bg-white overflow-hidden">
+            <CardHeader className="p-5 pb-3 border-b border-slate-100 bg-slate-50/50">
+              <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-900">
+                <History className="h-4 w-4 text-emerald-600" /> 
+                {lang === "hi" ? "हाल के भुगतान" : "Payment History"}
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y">
-                {paymentHistory.map(pay => (
-                  <div key={pay.id} className="p-4 sm:p-5 flex justify-between items-center hover:bg-slate-50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-full ${pay.method === 'upi' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
-                        {pay.method === 'upi' ? <CreditCard className="h-5 w-5" /> : <Banknote className="h-5 w-5" />}
+              <div className="divide-y divide-slate-100">
+                {paymentHistory.slice(0, 5).map((p: any) => (
+                  <div key={p.id} className="p-3.5 flex justify-between items-center text-xs">
+                    <div>
+                      <div className="font-bold text-slate-800">
+                        {p.method === 'cash' ? (lang === "hi" ? "नकद भुगतान" : "Cash Payout") : "UPI Payout"}
                       </div>
-                      <div>
-                        <div className="font-bold text-slate-900">Pickup #{pay.pickupId.replace('req', '')}</div>
-                        <div className="text-xs sm:text-sm text-slate-500 flex flex-col sm:flex-row sm:gap-2">
-                          <span>{new Date(pay.paidAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                          <span className="hidden sm:inline text-slate-300">•</span>
-                          <span className="uppercase">{pay.method}</span>
-                        </div>
+                      <div className="text-[10px] text-slate-400">
+                        {new Date(p.paidAt).toLocaleDateString()}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold text-green-600">+₹{pay.amount.toFixed(0)}</div>
-                      <div className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full inline-block mt-1">Paid</div>
+                      <div className="font-bold text-emerald-600">₹{p.amount}</div>
+                      <div className="text-[10px] text-slate-400 uppercase">{p.status}</div>
                     </div>
                   </div>
                 ))}
@@ -202,53 +214,9 @@ export default function EarningsDashboard() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Right Sidebar: Pending & Wallet Actions */}
-        <div className="space-y-6">
-          <Card className="border-orange-200 shadow-sm overflow-hidden">
-            <div className="bg-orange-50 p-4 border-b border-orange-100 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
-              <div>
-                <h3 className="font-bold text-orange-900">Pending Payments</h3>
-                <p className="text-sm text-orange-700 mt-1">Funds from completed jobs that have not been settled yet.</p>
-              </div>
-            </div>
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl font-black text-orange-600 mb-2">
-                ₹{pendingPaymentsAmount.toFixed(0)}
-              </div>
-              <p className="text-xs text-slate-500 mb-6">Will be settled to your UPI directly.</p>
-              
-              <Button className="w-full bg-slate-900 hover:bg-slate-800">
-                Request Instant Settlement
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3 border-b">
-              <CardTitle className="text-lg">Income Security Info</CardTitle>
-            </CardHeader>
-            <CardContent className="p-5 space-y-4">
-              <div className="flex gap-3 items-start">
-                <div className="bg-slate-100 p-2 rounded shrink-0"><Banknote className="h-4 w-4 text-slate-600" /></div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">100% Fair Wage Guarantee</h4>
-                  <p className="text-xs text-slate-500 mt-1">ReCircle does not take any commission from your earnings. 100% of the calculated fair price goes to you.</p>
-                </div>
-              </div>
-              <div className="flex gap-3 items-start">
-                <div className="bg-slate-100 p-2 rounded shrink-0"><Clock className="h-4 w-4 text-slate-600" /></div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">Same-day Payouts</h4>
-                  <p className="text-xs text-slate-500 mt-1">All pending UPI payments are automatically cleared at 9:00 PM every day.</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
       </div>
+
+      <SOSFloatingButton />
     </div>
   );
 }

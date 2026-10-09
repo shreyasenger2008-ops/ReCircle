@@ -67,11 +67,15 @@ export default function ReceiptModal({ pickup, onClose }: ReceiptModalProps) {
                 <span className="text-slate-500 text-sm">Final Weight</span>
                 <span className="font-medium text-slate-900 text-sm">{pickup.finalWeight || pickup.estimatedWeight} kg</span>
               </div>
+              <div className="flex justify-between border-b border-dashed pb-3">
+                <span className="text-slate-500 text-sm">Suraksha Health Pool Tip</span>
+                <span className="font-semibold text-rose-600 text-sm">₹10 (Worker Safety Fund)</span>
+              </div>
               <div className="flex justify-between pb-1">
                 <span className="text-slate-500 text-sm">Fair Income Generated</span>
                 <span className="font-bold text-green-600 text-sm">₹{amountPaid.toFixed(0)}</span>
               </div>
-              <div className="text-xs text-slate-400 text-right italic">100% went directly to the worker.</div>
+              <div className="text-xs text-slate-400 text-right italic">100% direct to worker + safety pool. Zero platform commission.</div>
             </div>
 
           </div>
