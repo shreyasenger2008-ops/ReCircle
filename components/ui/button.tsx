@@ -13,16 +13,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center rounded-xl text-xs sm:text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40",
           {
-            "bg-blue-600 text-white hover:bg-blue-600/90": variant === "default",
-            "bg-red-500 text-white hover:bg-red-500/90": variant === "destructive",
-            "border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900": variant === "outline",
-            "bg-slate-100 text-slate-900 hover:bg-slate-100/80": variant === "secondary",
-            "hover:bg-slate-100 hover:text-slate-900": variant === "ghost",
+            "bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs": variant === "default",
+            "bg-red-600 text-white hover:bg-red-700 shadow-xs": variant === "destructive",
+            "border border-slate-300 bg-white text-slate-800 hover:bg-slate-100 hover:text-slate-900 shadow-2xs font-bold": variant === "outline",
+            "bg-slate-100 text-slate-900 hover:bg-slate-200 font-bold": variant === "secondary",
+            "hover:bg-slate-100 text-slate-700 hover:text-slate-900": variant === "ghost",
             "h-10 px-4 py-2": size === "default",
-            "h-9 rounded-md px-3": size === "sm",
-            "h-11 rounded-md px-8": size === "lg",
+            "h-9 rounded-lg px-3": size === "sm",
+            "h-11 rounded-xl px-6": size === "lg",
             "h-10 w-10": size === "icon",
           },
           className

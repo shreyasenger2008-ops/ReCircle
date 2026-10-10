@@ -1,83 +1,44 @@
 "use client";
-
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
-import { MOCK_REQUESTS, PickupRequest } from "@/lib/mock-data";
+import { usePlatformData } from "@/lib/platform-data-context";
+import { PickupRequest } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  ReceiptText, CreditCard, Banknote, Download, Heart, Leaf
+  ReceiptText, CreditCard, Banknote, Download, Heart, Leaf, ShieldCheck, CheckCircle2
 } from "lucide-react";
 import ReceiptModal from "@/components/ReceiptModal";
 import { toast } from "sonner";
+import { formatCurrency, formatDate } from "@/lib/formatters";
 
 export default function GeneratorPayments() {
   const { user } = useAuth();
   const { lang, t } = useLanguage();
+  const { requests } = usePlatformData();
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [activeReceipt, setActiveReceipt] = useState<PickupRequest | null>(null);
-  const [filterMode, setFilterMode] = useState<"all" | "upi" | "cash">("all");
+  const [filterMode, setFilterMode] = useState<"all" | "completed">("all");
 
   if (!user || user.role !== "generator") {
     return <div className="p-8">Unauthorized. Please log in as a Citizen Generator.</div>;
   }
 
-  // Completed pickups for this generator
-  const completedPickups = MOCK_REQUESTS.filter(r => r.generatorId === user.id && (r.status === "completed" || r.status === "accepted"));
+  // Completed pickups for this generator directly from platform data
+  const myRequests = requests.filter(r => (r.generatorId === user.id || r.generatorName === user.name));
+  const completedPickups = myRequests.filter(r => r.status === "completed" || r.status === "accepted" || r.status === "on_the_way");
 
-  const allPayments = [
-    ...completedPickups,
-    {
-      id: "req-hist-1",
-      generatorId: user.id,
-      generatorName: user.name,
-      wasteType: lang === "hi" ? "गत्ता व पैकेजिंग बॉक्स" : "Cardboard & Packaging Boxes",
-      estimatedWeight: 18,
-      finalWeight: 18.5,
-      estimatedPrice: 185,
-      finalPrice: 185,
-      payoutAmount: 185,
-      items: [{ type: "Cardboard", weight: 18.5 }],
-      address: "12, MG Road, Bengaluru",
-      location: { lat: 12.9716, lng: 77.5946 },
-      preferredTime: "Morning",
-      urgency: "low" as const,
-      status: "completed" as const,
-      paymentMode: "upi" as const,
-      pickerName: "Suresh (Picker)",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString()
-    },
-    {
-      id: "req-hist-2",
-      generatorId: user.id,
-      generatorName: user.name,
-      wasteType: lang === "hi" ? "पीईटी प्लास्टिक की बोतलें व डिब्बे" : "PET Plastic Bottles & Cans",
-      estimatedWeight: 12,
-      finalWeight: 12,
-      estimatedPrice: 154,
-      finalPrice: 154,
-      payoutAmount: 154,
-      items: [{ type: "Plastic", weight: 12 }],
-      address: "12, MG Road, Bengaluru",
-      location: { lat: 12.9716, lng: 77.5946 },
-      preferredTime: "Afternoon",
-      urgency: "medium" as const,
-      status: "completed" as const,
-      paymentMode: "upi" as const,
-      pickerName: "Ramesh (Picker)",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString()
-    }
-  ];
+  const allPayments = completedPickups.length > 0 ? completedPickups : myRequests;
 
   const filteredPayments = allPayments.filter(p => {
     if (filterMode === "all") return true;
-    return (p.paymentMode || "upi") === filterMode;
+    return p.status === filterMode;
   });
 
-  const totalFairPaid = allPayments.reduce((sum, r) => sum + (r.finalPrice || r.estimatedPrice || 0), 0);
-  const totalTipsContributed = allPayments.length * 10;
+  const totalFairPaid = allPayments.reduce((sum, r) => sum + (r.finalPrice || r.payoutAmount || r.estimatedPrice || 0), 0);
+  const totalTipsContributed = allPayments.filter(r => r.status === "completed").length * 10;
   const totalRecycledKg = allPayments.reduce((sum, r) => sum + (r.finalWeight || r.estimatedWeight || 0), 0);
 
   const openReceipt = (req: PickupRequest) => {
@@ -116,9 +77,9 @@ export default function GeneratorPayments() {
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
                   {lang === "hi" ? "सफाई मित्रों को किया गया कुल भुगतान" : "Total Fair Wages Paid"}
                 </p>
-                <h3 className="text-3xl font-black text-emerald-400">₹{totalFairPaid.toFixed(0)}</h3>
+                <h3 className="text-3xl font-black text-emerald-400">{formatCurrency(totalFairPaid)}</h3>
                 <p className="text-xs text-slate-300 mt-1">
-                  {lang === "hi" ? "100% सीधे श्रमिकों को प्राप्त" : "100% directly received by workers"}
+                  {lang === "hi" ? "100% सीधे UPI एस्क्रो द्वारा भुगतान" : "100% direct instant UPI Escrow"}
                 </p>
               </div>
               <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
@@ -135,7 +96,7 @@ export default function GeneratorPayments() {
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
                   {lang === "hi" ? "सुरक्षा हेल्थ टिप योगदान" : "Suraksha Health Tips"}
                 </p>
-                <h3 className="text-3xl font-black text-rose-600">₹{totalTipsContributed}</h3>
+                <h3 className="text-3xl font-black text-rose-600">{formatCurrency(totalTipsContributed)}</h3>
                 <p className="text-xs text-slate-500 mt-1">
                   {lang === "hi" ? "सफाई मित्रों के आपातकालीन क्लिनिक फंड में" : "Pooled for worker emergency clinic care"}
                 </p>
@@ -175,34 +136,14 @@ export default function GeneratorPayments() {
               {lang === "hi" ? "सत्यापित लेन-देन बहीखाता" : "Verified Transaction Ledger"}
             </CardTitle>
             <CardDescription className="text-xs text-slate-500">
-              {lang === "hi" ? "प्रत्येक पिकअप डिजिटल रसीद और ऑडिट ट्रेल से सुरक्षित है" : "All pickups are sealed with immutable digital receipts"}
+              {lang === "hi" ? "प्रत्येक पिकअप 100% डिजिटल रसीद और UPI ऑडिट ट्रेल से सुरक्षित है" : "All pickups are secured with 100% digital receipts and UPI audit trail"}
             </CardDescription>
           </div>
-          <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-xs">
-            <button
-              onClick={() => setFilterMode("all")}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                filterMode === "all" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              {lang === "hi" ? "सभी माध्यम" : "All Modes"}
-            </button>
-            <button
-              onClick={() => setFilterMode("upi")}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                filterMode === "upi" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              UPI ({lang === "hi" ? "डिजिटल" : "Digital"})
-            </button>
-            <button
-              onClick={() => setFilterMode("cash")}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                filterMode === "cash" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              {lang === "hi" ? "नकद" : "Cash"}
-            </button>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-200 text-xs px-2.5 py-1 font-semibold flex items-center gap-1">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+              {lang === "hi" ? "100% डिजिटल UPI एस्क्रो" : "100% Direct UPI Escrow"}
+            </Badge>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -210,14 +151,14 @@ export default function GeneratorPayments() {
             {filteredPayments.map(req => (
               <div key={req.id} className="p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50 transition-colors">
                 <div className="flex items-start gap-4">
-                  <div className={`p-2.5 rounded-2xl mt-0.5 ${req.paymentMode === 'cash' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                    {req.paymentMode === 'cash' ? <Banknote className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
+                  <div className="p-2.5 rounded-2xl mt-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100">
+                    <CreditCard className="h-5 w-5" />
                   </div>
                   <div>
                     <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
                       <span>{req.wasteType}</span>
-                      <Badge variant="outline" className="text-[10px] uppercase font-mono bg-white rounded-lg">
-                        {req.paymentMode || 'UPI'}
+                      <Badge variant="outline" className="text-[10px] uppercase font-mono bg-white text-emerald-700 border-emerald-200 rounded-lg">
+                        UPI ESCROW
                       </Badge>
                       <Badge variant="success" className="text-[10px] bg-emerald-100 text-emerald-800 rounded-lg">
                         {lang === "hi" ? "100% भुगतान सफल" : "Paid 100%"}
@@ -228,14 +169,14 @@ export default function GeneratorPayments() {
                       <span>•</span>
                       <span>{lang === "hi" ? "वजन:" : "Weight:"} <strong>{req.finalWeight || req.estimatedWeight} kg</strong></span>
                       <span>•</span>
-                      <span>{lang === "hi" ? "तारीख:" : "Date:"} {new Date(req.createdAt).toLocaleDateString()}</span>
+                      <span>{lang === "hi" ? "तारीख:" : "Date:"} {formatDate(req.createdAt)}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4 self-end sm:self-center">
                   <div className="text-right">
-                    <div className="text-xl font-black text-slate-900">₹{(req.finalPrice || req.estimatedPrice).toFixed(0)}</div>
+                    <div className="text-xl font-black text-slate-900">{formatCurrency(req.finalPrice || req.estimatedPrice || 0)}</div>
                     <div className="text-[10px] text-emerald-600 font-semibold">{lang === "hi" ? "+₹10 स्वास्थ्य फंड" : "+₹10 Health Pool"}</div>
                   </div>
                   <Button 

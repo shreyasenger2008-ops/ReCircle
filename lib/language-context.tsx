@@ -21,9 +21,10 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "nav.route": "स्मार्ट रूट व ढलान",
     "nav.karma": "कचरा कर्मा क्रेडिट",
     "nav.health": "सुरक्षा कवच (हेल्थ फंड)",
+    "nav.benefits": "कल्याण व लाभ (Benefits)",
     "nav.myjobs": "मेरे सक्रिय काम",
-    "nav.earnings": "कमाई का विवरण",
-    "nav.wallet": "यूपीआई वॉलेट",
+    "nav.earnings": "कमाई और वॉलेट",
+    "nav.wallet": "कमाई और UPI वॉलेट",
     "nav.profile": "मेरी प्रोफाइल व आईडी",
     "nav.help": "सुरक्षा व सहायता",
     "nav.schedule": "पिकअप शेड्यूल करें",
@@ -34,13 +35,24 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "nav.payments": "भुगतान व रसीदें",
     "nav.logout": "लॉगआउट / रोल बदलें",
     "nav.users": "उपयोगकर्ता और सत्यापन",
+    "nav.pickups": "पिकअप और डिस्पैच",
     "nav.fairness": "समानता विश्लेषण",
     "nav.disputes": "शिकायत निवारण",
     "nav.settings": "प्लेटफ़ॉर्म सेटिंग्स",
 
+    // Bottom Navigation
+    "tab.home": "होम",
+    "tab.jobs": "काम",
+    "tab.wallet": "वॉलेट",
+    "tab.benefits": "लाभ",
+    "tab.profile": "प्रोफाइल",
+
     // Dashboard
     "dash.greeting": "नमस्ते",
     "dash.subtitle": "यहाँ आपकी दैनिक कमाई और आज के रूट का विवरण है।",
+    "dash.nextPickupTitle": "आपका अगला पिकअप",
+    "dash.startNavigation": "नेविगेट करें / रास्ते में निकलें",
+    "dash.markArrived": "कचरा एकत्र करें व वजन करें",
     "dash.online": "ऑनलाइन व सक्रिय",
     "dash.busy": "व्यस्त",
     "dash.todayEarnings": "आज की कमाई",
@@ -57,6 +69,7 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "dash.expectedPayout": "पक्की कमाई",
     "dash.recommendedNearby": "नजदीकी नए पिकअप",
     "dash.viewMap": "नक्शा देखें",
+    "dash.viewList": "सूची देखें",
     "dash.accept": "स्वीकार करें",
     "dash.noJobs": "फिलहाल कोई सक्रिय पिकअप नहीं है। नजदीकी रडार से नए काम स्वीकार करें।",
 
@@ -90,17 +103,19 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "route.lowStrain": "कम तनाव (ढलान अनुकूल)",
     "route.cartCapacity": "ठेला क्षमता",
     "route.startRun": "डाउनहिल रूट शुरू करें",
-    "route.optimalNotice": "💡 एल्गोरिदम ने सभी पिकअप को पहाड़ी की ढलान के क्रम में लगाया है ताकि ठेला खींचने में 40% कम मेहनत लगे।",
+    "route.optimalNotice": "💡 एल्गोरिदम ने सभी पिकअप को पहाड़ी की ढलान के क्रम में लगाया है ताकि ठेला खींचने में 45% कम मेहनत लगे।",
 
-    // Karma Credit
-    "karma.title": "कचरा कर्मा क्रेडिट स्कोर",
-    "karma.subtitle": "आपके काम की समयबद्धता और अच्छी छंटाई से बना विश्वसनीय क्रेडिट स्कोर।",
+    // Karma Credit & Benefits
+    "karma.title": "कचरा कर्मा क्रेडिट व सुरक्षा लाभ",
+    "karma.subtitle": "समयबद्धता, अच्छी छंटाई और दुर्घटना बीमा सुरक्षा का एकीकृत केंद्र।",
     "karma.scoreLabel": "आपका कर्मा स्कोर",
     "karma.excellent": "उत्कृष्ट रेटिंग (ऋण योग्य)",
     "karma.microloanTitle": "आसान माइक्रोलोन सिम्युलेटर",
     "karma.loanSubtitle": "कर्मा स्कोर के आधार पर बिना गारंटी तुरंत ऋण प्राप्त करें।",
     "karma.applyLoan": "ऋण के लिए आवेदन करें",
     "karma.badges": "सफलता बैज व उपलब्धियां",
+    "benefits.title": "सफाई मित्र कल्याण व लाभ",
+    "benefits.subtitle": "कचरा कर्मा क्रेडिट और सुरक्षा कवच हेल्थ पूल का संयुक्त डैशबोर्ड।",
 
     // Health Pool
     "health.title": "सुरक्षा कवच - स्वास्थ्य एवं सुरक्षा फंड",
@@ -113,7 +128,7 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "health.claimSubmit": "क्लेम सबमिट करें",
 
     // Wallet
-    "wallet.title": "यूपीआई डिजिटल वॉलेट",
+    "wallet.title": "कमाई विवरण व UPI वॉलेट",
     "wallet.subtitle": "आपकी मेहनत की पूरी कमाई - 100% सीधी और तुरंत आपके खाते में।",
     "wallet.balance": "वॉलेट बैलेंस",
     "wallet.withdraw": "बैंक में तुरंत ट्रांसफर करें",
@@ -137,12 +152,12 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
 
     // Common
     "voice.barTitle": "🇮🇳 बोलकर सुनें और समझें",
-    "voice.barSubtitle": "किसी भी कार्ड पर 🔊 बटन दबाकर पूरी जानकारी हिन्दी में सुनें",
+    "voice.barSubtitle": "किसी भी कार्ड पर 🔊 बटन दबाकर पूरी जानकारी अपनी भाषा में सुनें",
     "voice.speakBtn": "बोलें",
     "voice.listen": "सुनें",
     "voice.listening": "सुन रहे हैं...",
     "btn.accept": "स्वीकार करें",
-    "btn.complete": "पूरा करें",
+    "btn.complete": "वजन दर्ज करें व पूरा करें",
     "btn.viewReceipt": "रसीद देखें",
     "btn.dispute": "शिकायत दर्ज करें",
     "btn.withdraw": "बैंक में ट्रांसफर करें",
@@ -158,9 +173,10 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "nav.route": "Route & Strain Planner",
     "nav.karma": "Kachra Karma Credit",
     "nav.health": "Suraksha Health Pool",
+    "nav.benefits": "Benefits & Karma",
     "nav.myjobs": "My Active Jobs",
-    "nav.earnings": "Earnings Dashboard",
-    "nav.wallet": "UPI Digital Wallet",
+    "nav.earnings": "Earnings & Wallet",
+    "nav.wallet": "Earnings & UPI Wallet",
     "nav.profile": "Worker Profile & ID",
     "nav.help": "Safety & Guidelines",
     "nav.schedule": "Schedule Pickup",
@@ -171,13 +187,24 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "nav.payments": "Payments & Receipts",
     "nav.logout": "Switch Persona / Logout",
     "nav.users": "Users & Verifications",
+    "nav.pickups": "Pickups & Dispatch",
     "nav.fairness": "Fairness Analytics",
     "nav.disputes": "Dispute Arbitration",
     "nav.settings": "Platform Settings",
 
+    // Bottom Navigation
+    "tab.home": "Home",
+    "tab.jobs": "Jobs",
+    "tab.wallet": "Wallet",
+    "tab.benefits": "Benefits",
+    "tab.profile": "Profile",
+
     // Dashboard
     "dash.greeting": "Hello",
     "dash.subtitle": "Here is your daily income and route summary.",
+    "dash.nextPickupTitle": "Your Next Pickup",
+    "dash.startNavigation": "Start Navigation",
+    "dash.markArrived": "Arrived & Confirm Weight",
     "dash.online": "Online & Accepting",
     "dash.busy": "Busy",
     "dash.todayEarnings": "Today's Earnings",
@@ -193,7 +220,8 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "dash.markCompleted": "Mark as Completed",
     "dash.expectedPayout": "Expected Payout",
     "dash.recommendedNearby": "Recommended Nearby",
-    "dash.viewMap": "View map",
+    "dash.viewMap": "View Map",
+    "dash.viewList": "View List",
     "dash.accept": "Accept Request",
     "dash.noJobs": "No active pickups right now. Find new requests from the Nearby Radar.",
 
@@ -229,8 +257,8 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "route.startRun": "Start Downhill Route",
     "route.optimalNotice": "💡 ReCircle orders all stops downhill so you avoid pushing heavy 100kg carts uphill.",
 
-    // Karma Credit
-    "karma.title": "Kachra Karma Credit Score",
+    // Karma Credit & Benefits
+    "karma.title": "Kachra Karma Credit & Benefits",
     "karma.subtitle": "Alternative credit rating proving reliability through punctual collections.",
     "karma.scoreLabel": "Your Karma Score",
     "karma.excellent": "Excellent Credit Tier (Eligible for Loans)",
@@ -238,6 +266,8 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "karma.loanSubtitle": "Collateral-free credit powered by your verified recycling karma score.",
     "karma.applyLoan": "Apply for Microloan",
     "karma.badges": "Achievement Badges",
+    "benefits.title": "Worker Benefits & Welfare",
+    "benefits.subtitle": "Unified portal for Karma Credit scoring and Suraksha Health Pool.",
 
     // Health Pool
     "health.title": "Suraksha Kawach - Health & Safety Pool",
@@ -250,7 +280,7 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "health.claimSubmit": "Submit Claim for Instant Payout",
 
     // Wallet
-    "wallet.title": "UPI Digital Wallet",
+    "wallet.title": "Earnings & UPI Wallet",
     "wallet.subtitle": "Your verified earnings — 100% direct and instant to your bank account.",
     "wallet.balance": "Wallet Balance",
     "wallet.withdraw": "Instant Bank Withdrawal",
@@ -274,12 +304,12 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
 
     // Common
     "voice.barTitle": "🇮🇳 Vernacular Voice & Audio Assistant",
-    "voice.barSubtitle": "Tap the 🔊 icon on any pickup card to listen to details",
+    "voice.barSubtitle": "Tap the 🔊 icon on any pickup card to listen to details in your language",
     "voice.speakBtn": "Speak",
     "voice.listen": "Listen",
     "voice.listening": "Listening...",
     "btn.accept": "Accept Pickup",
-    "btn.complete": "Complete Job",
+    "btn.complete": "Confirm Weight & Finish",
     "btn.viewReceipt": "View Receipt",
     "btn.dispute": "Raise Dispute",
     "btn.withdraw": "Instant Withdrawal",
@@ -295,9 +325,10 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "nav.route": "ಸ್ಮಾರ್ಟ್ ಮಾರ್ಗ ಯೋಜನೆ",
     "nav.karma": "ಕರ್ಮ ಕ್ರೆಡಿಟ್ ಸ್ಕೋರ್",
     "nav.health": "ಸುರಕ್ಷಾ ಹೆಲ್ತ್ ಪೂಲ್",
+    "nav.benefits": "ಕಲ್ಯಾಣ ಮತ್ತು ಸೌಲಭ್ಯಗಳು",
     "nav.myjobs": "ನನ್ನ ಕೆಲಸಗಳು",
-    "nav.earnings": "ಗಳಿಕೆ ವಿವರ",
-    "nav.wallet": "ಡಿಜಿಟಲ್ ವ್ಯಾಲೆಟ್",
+    "nav.earnings": "ಗಳಿಕೆ ಮತ್ತು ವ್ಯಾಲೆಟ್",
+    "nav.wallet": "ಗಳಿಕೆ ಮತ್ತು UPI ವ್ಯಾಲೆಟ್",
     "nav.profile": "ನನ್ನ ಪ್ರೊಫೈಲ್",
     "nav.help": "ಸುರಕ್ಷತೆ ಮತ್ತು ಸಹಾಯ",
     "nav.schedule": "ಪಿಕಪ್ ಬುಕ್ ಮಾಡಿ",
@@ -308,13 +339,24 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "nav.payments": "ಪಾವತಿಗಳು",
     "nav.logout": "ಲಾಗ್‌ಔಟ್",
     "nav.users": "ಬಳಕೆದಾರರು",
+    "nav.pickups": "ಪಿಕಪ್ ರವಾನೆ",
     "nav.fairness": "ನ್ಯಾಯಯುತ ವಿಶ್ಲೇಷಣೆ",
     "nav.disputes": "ದೂರು ನಿವಾರಣೆ",
     "nav.settings": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
 
+    // Bottom Navigation
+    "tab.home": "ಮುಖಪುಟ",
+    "tab.jobs": "ಕೆಲಸಗಳು",
+    "tab.wallet": "ವ್ಯಾಲೆಟ್",
+    "tab.benefits": "ಲಾಭಗಳು",
+    "tab.profile": "ಪ್ರೊಫೈಲ್",
+
     // Dashboard
     "dash.greeting": "ನಮಸ್ಕಾರ",
     "dash.subtitle": "ಇಲ್ಲಿ ನಿಮ್ಮ ಇಂದಿನ ಗಳಿಕೆ ಮತ್ತು ಮಾರ್ಗದ ವಿವರಗಳಿವೆ.",
+    "dash.nextPickupTitle": "ನಿಮ್ಮ ಮುಂದಿನ ಪಿಕಪ್",
+    "dash.startNavigation": "ಮಾರ್ಗ ಆರಂಭಿಸಿ / ಪಿಕಪ್‌ಗೆ ತೆರಳಿ",
+    "dash.markArrived": "ತಲುಪಿದೆ ಮತ್ತು ತೂಕ ದೃಢೀಕರಿಸಿ",
     "dash.online": "ಆನ್‌ಲೈನ್ ಮತ್ತು ಸಕ್ರಿಯ",
     "dash.busy": "ಕಾರ್ಯನಿರತ",
     "dash.todayEarnings": "ಇಂದಿನ ಗಳಿಕೆ",
@@ -331,6 +373,7 @@ const DICTIONARY: Record<Language, Record<string, string>> = {
     "dash.expectedPayout": "ಗಳಿಕೆ",
     "dash.recommendedNearby": "ಹತ್ತಿರದ ಹೊಸ ಪಿಕಪ್‌ಗಳು",
     "dash.viewMap": "ನಕ್ಷೆ ನೋಡಿ",
+    "dash.viewList": "ಪಟ್ಟಿ ನೋಡಿ",
     "dash.accept": "ಸ್ವೀಕರಿಸಿ",
     "dash.noJobs": "ಯಾವುದೇ ಸಕ್ರಿಯ ಪಿಕಪ್‌ಗಳಿಲ್ಲ.",
 

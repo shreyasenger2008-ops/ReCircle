@@ -1,8 +1,8 @@
 "use client";
-
 import React, { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
+import { usePlatformData } from "@/lib/platform-data-context";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,56 +13,48 @@ import {
 import { toast } from "sonner";
 import SOSFloatingButton from "@/components/SOSFloatingButton";
 
+import { MOCK_WALLET_TRANSACTIONS, WalletTransaction } from "@/lib/mock-data";
+import { formatCurrency } from "@/lib/formatters";
+
 export default function PickerWalletPage() {
   const { user } = useAuth();
   const { lang, t, speak } = useLanguage();
-  const [balance, setBalance] = useState(user?.balance || 1450.0);
+  const { users, payments, requests, withdrawPickerBalance } = usePlatformData();
   const [withdrawAmount, setWithdrawAmount] = useState<number | "">("");
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   if (!user || user.role !== "picker") {
-    return <div className="p-8">Unauthorized. Please log in as a Waste-Picker.</div>;
+    return <div className="p-8 text-center text-slate-900 font-bold">Unauthorized. Please log in as a Waste-Picker.</div>;
   }
 
-  const transactions = [
-    { 
-      id: "tx-1", 
-      title: lang === "hi" ? "त्वरित यूपीआई भुगतान (पिकअप #3)" : "Instant UPI Payout (Pickup #3)", 
-      type: "credit", 
-      amount: 368, 
-      date: lang === "hi" ? "आज, 11:30 AM" : "Today, 11:30 AM", 
-      status: "completed", 
-      mode: "UPI" 
-    },
-    { 
-      id: "tx-2", 
-      title: lang === "hi" ? "बैंक खाते में निकासी" : "Withdrawal to Bank Account", 
-      type: "debit", 
-      amount: 1000, 
-      date: lang === "hi" ? "कल, 06:15 PM" : "Yesterday, 06:15 PM", 
-      status: "completed", 
-      mode: "IMPS" 
-    },
-    { 
-      id: "tx-3", 
-      title: lang === "hi" ? "सुरक्षा कवच चिकित्सा सहायता" : "Suraksha Kawach Medical Aid", 
-      type: "credit", 
-      amount: 850, 
-      date: "02 Oct 2026", 
-      status: "completed", 
-      mode: "Health Fund" 
-    },
-    { 
-      id: "tx-4", 
-      title: lang === "hi" ? "सीधा भुगतान (पिकअप #1)" : "Direct Payout (Pickup #1)", 
-      type: "credit", 
-      amount: 450, 
-      date: "01 Oct 2026", 
-      status: "completed", 
-      mode: "Cash" 
-    },
-  ];
+  // Calculate live reactive balance
+  const currentUserObj = users.find(u => u.id === user.id || u.role === "picker");
+  const storedBalance = currentUserObj?.balance ?? 1450;
+  
+  // Guarantee any completed pickups are included in balance
+  const completedNewPickups = requests.filter(r => 
+    (r.matchedPickerId === user.id || r.pickerName === user.name || user.id === "p1") && 
+    r.status === "completed" && 
+    !["req1", "req2"].includes(r.id)
+  );
+  const newPickupTotal = completedNewPickups.reduce((sum, r) => sum + (r.finalPrice || r.payoutAmount || 0), 0);
+  const balance = Math.max(storedBalance, 1450 + newPickupTotal);
+
+  // Real-time combined transaction history
+  const livePaymentTransactions: WalletTransaction[] = completedNewPickups.map(req => ({
+    id: `live-tx-${req.id}`,
+    userId: user.id,
+    type: "credit",
+    amount: req.finalPrice || req.payoutAmount || 174,
+    description: `UPI Direct Payout: ${req.generatorName || "Rajesh Kumar"} (${req.wasteType})`,
+    timestamp: "Just now",
+    status: "completed",
+    referenceId: `UPI-REC-${req.id.toUpperCase()}`,
+  }));
+
+  const staticTransactions = MOCK_WALLET_TRANSACTIONS.filter(t => t.userId === user.id || t.userId === "p1");
+  const transactions = [...livePaymentTransactions, ...staticTransactions];
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +66,7 @@ export default function PickerWalletPage() {
 
     setIsProcessing(true);
     setTimeout(() => {
-      setBalance(prev => prev - Number(withdrawAmount));
+      withdrawPickerBalance(user.id, Number(withdrawAmount));
       setIsProcessing(false);
       setWithdrawModalOpen(false);
       const msg = lang === "hi"
@@ -180,18 +172,18 @@ export default function PickerWalletPage() {
                     {tx.type === 'credit' ? <ArrowDownLeft className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
                   </div>
                   <div>
-                    <div className="font-bold text-slate-900 text-sm">{tx.title}</div>
+                    <div className="font-bold text-slate-900 text-sm">{tx.description}</div>
                     <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
-                      <span>{tx.date}</span>
+                      <span>{tx.timestamp}</span>
                       <span>•</span>
-                      <Badge variant="outline" className="text-[10px] uppercase font-mono bg-white rounded-lg">{tx.mode}</Badge>
+                      <Badge variant="outline" className="text-[10px] uppercase font-mono bg-white rounded-lg">100% UPI</Badge>
                     </div>
                   </div>
                 </div>
 
                 <div className="text-right">
                   <div className={`text-lg font-black ${tx.type === 'credit' ? 'text-emerald-600' : 'text-slate-900'}`}>
-                    {tx.type === 'credit' ? '+' : '-'}₹{tx.amount.toLocaleString()}
+                    {tx.type === 'credit' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </div>
                   <div className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full inline-block font-semibold">
                     {lang === "hi" ? "सफल" : "Settled"}

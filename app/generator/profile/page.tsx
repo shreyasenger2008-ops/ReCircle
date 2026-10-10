@@ -237,9 +237,10 @@ export default function GeneratorProfilePage() {
                     {lang === "hi" ? "प्राथमिक पिकअप पता (संपादनीय)" : "Primary Pickup Address (Editable)"}
                   </label>
                   <textarea
-                    className="flex min-h-[75px] w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                    className="flex min-h-[85px] w-full rounded-xl border-2 border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs"
                     value={primaryAddress}
                     onChange={(e) => setPrimaryAddress(e.target.value)}
+                    placeholder="Enter your street, building, and apartment number"
                     required
                   />
                 </div>

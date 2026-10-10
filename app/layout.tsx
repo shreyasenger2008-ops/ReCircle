@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
+import { PlatformDataProvider } from "@/lib/platform-data-context";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
@@ -16,12 +17,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`antialiased bg-slate-50 min-h-screen`}
-      >
+      <body className="antialiased bg-slate-50 min-h-screen">
         <AuthProvider>
           <LanguageProvider>
-            {children}
+            <PlatformDataProvider>
+              {children}
+            </PlatformDataProvider>
           </LanguageProvider>
         </AuthProvider>
         <Toaster position="bottom-right" richColors />

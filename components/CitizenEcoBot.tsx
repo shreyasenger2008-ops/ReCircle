@@ -3,13 +3,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { 
   MessageSquare, X, Send, Sparkles, Bot, User, Volume2, 
-  HelpCircle, RefreshCw, ChevronDown, CheckCircle2, Leaf
+  HelpCircle, RefreshCw, ChevronDown, CheckCircle2, Leaf, MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { speakText, stopSpeaking } from "@/lib/voice-assistant";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/language-context";
 
 interface ChatMessage {
   id: string;
@@ -19,26 +19,28 @@ interface ChatMessage {
 }
 
 const POPULAR_QUESTIONS = [
-  { text: "🌱 Waste Segregation Guide", q: "How to segregate household waste correctly?" },
-  { text: "💰 Live Scrap Prices", q: "What are today's benchmark scrap prices?" },
-  { text: "📦 How to Book Pickup", q: "How do I schedule a doorstep scrap pickup?" },
-  { text: "🌟 Green Karma Rewards", q: "What are Green Karma points and how to earn them?" },
-  { text: "🍕 Pizza Box Rules", q: "Is a greasy pizza box recyclable?" },
+  { text: "🌱 Waste Sorting Rules", q: "How to segregate household waste correctly?" },
+  { text: "💰 Live Scrap Benchmark Rates", q: "What are today's benchmark scrap prices per kg?" },
+  { text: "🍕 Are Pizza Boxes Recyclable?", q: "Can greasy pizza boxes be recycled?" },
+  { text: "📦 How Doorstep Pickup Works", q: "How do I schedule a doorstep scrap pickup?" },
+  { text: "🌟 What is Green Karma?", q: "What are Green Karma points and how to earn them?" },
   { text: "📱 E-Waste Disposal", q: "How should I dispose of old chargers and batteries?" },
-  { text: "🥛 Milk Packet Rules", q: "Are plastic milk pouches recyclable?" },
 ];
 
 export default function CitizenEcoBot() {
+  const { lang } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputVal, setInputVal] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(1);
+  const [showPromptHint, setShowPromptHint] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Initial greeting in clean English
-    const welcomeText = "Hello! 👋 I'm **ReCircle EcoBot**, your AI Circular Economy guide.\n\nAsk me anything about waste sorting rules, benchmark scrap prices, or how to schedule ethical doorstep pickups!";
+    // Initial welcome greeting
+    const welcomeText = lang === "hi"
+      ? "नमस्ते! 👋 मैं **ReCircle EcoBot** हूँ - आपका AI रीसाइक्लिंग व स्क्रैप मूल्य सहायक।\n\nकचरा छंटाई नियम, आज के मंडी स्क्रैप भाव या डोरस्टेप पिकअप के बारे में मुझसे कुछ भी पूछें!"
+      : "Hello! 👋 I'm **ReCircle EcoBot**, your AI Circular Economy guide.\n\nAsk me anything about waste sorting rules, benchmark scrap prices, or how to schedule ethical doorstep pickups!";
 
     setMessages([
       {
@@ -48,11 +50,22 @@ export default function CitizenEcoBot() {
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       },
     ]);
-  }, []);
+
+    const handleOpenBot = () => setIsOpen(true);
+    const handleToggleBot = () => setIsOpen((prev) => !prev);
+
+    window.addEventListener("open-citizen-ecobot", handleOpenBot);
+    window.addEventListener("toggle-citizen-ecobot", handleToggleBot);
+
+    return () => {
+      window.removeEventListener("open-citizen-ecobot", handleOpenBot);
+      window.removeEventListener("toggle-citizen-ecobot", handleToggleBot);
+    };
+  }, [lang]);
 
   useEffect(() => {
     if (isOpen) {
-      setUnreadCount(0);
+      setShowPromptHint(false);
       scrollToBottom();
     }
   }, [isOpen, messages]);
@@ -80,7 +93,7 @@ export default function CitizenEcoBot() {
       const res = await fetch("/api/chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: textToSend, lang: "en" }),
+        body: JSON.stringify({ message: textToSend, lang }),
       });
 
       const data = await res.json();
@@ -96,7 +109,7 @@ export default function CitizenEcoBot() {
       const errorMsg: ChatMessage = {
         id: "bot_err_" + Date.now(),
         sender: "bot",
-        text: "Network error. Please try again or ask for scrap benchmark prices.",
+        text: "Network error. Please ask about scrap rates or waste segregation rules.",
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -107,35 +120,49 @@ export default function CitizenEcoBot() {
 
   const handleSpeak = (text: string) => {
     const cleanText = text.replace(/[*_#`]/g, "");
-    speakText(cleanText, "en-IN");
+    speakText(cleanText, lang === "hi" ? "hi-IN" : "en-IN");
   };
 
   return (
     <>
-      {/* Floating Bottom-Right Trigger Button */}
+      {/* Floating Bottom-Right Trigger Button with Label & Suggested Prompt Callout */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-40 animate-in fade-in slide-in-from-bottom-5">
+        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2 animate-in fade-in slide-in-from-bottom-5">
+          
+          {/* Suggested Prompt Callout Bubble */}
+          {showPromptHint && (
+            <div className="hidden sm:flex items-center gap-2 bg-slate-900/95 text-white text-xs font-semibold px-3.5 py-2 rounded-2xl shadow-xl border border-emerald-500/40 backdrop-blur-md max-w-xs animate-bounce">
+              <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
+              <span>{lang === "hi" ? "💡 'क्या पिज़्ज़ा बॉक्स रीसायकल होते हैं?' पूछें" : "💡 Ask: 'Can pizza boxes be recycled?'"}</span>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowPromptHint(false);
+                }}
+                className="text-slate-400 hover:text-white ml-1"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+
+          {/* Expanded Pill Trigger Button */}
           <button
             onClick={() => setIsOpen(true)}
-            className="group relative flex items-center gap-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-slate-900 text-white p-3.5 pr-5 rounded-full shadow-2xl hover:shadow-emerald-500/30 transition-all hover:scale-105 active:scale-95 border-2 border-white/20"
+            aria-label="Open ReCircle EcoBot"
+            title="Ask ReCircle EcoBot"
+            className="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-emerald-600 via-teal-700 to-slate-900 text-white shadow-2xl hover:shadow-emerald-500/30 transition-all hover:scale-105 active:scale-95 border-2 border-white/20 min-h-[48px]"
           >
             <div className="relative">
-              <div className="h-10 w-10 rounded-full bg-white text-emerald-700 flex items-center justify-center font-bold shadow-md">
-                <Bot className="h-5 w-5 animate-pulse" />
-              </div>
-              <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+              <Bot className="h-5 w-5 text-emerald-300" />
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-400"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
               </span>
             </div>
-            <div className="text-left">
-              <div className="text-xs font-black uppercase tracking-wider flex items-center gap-1 text-emerald-200">
-                <Sparkles className="h-3 w-3" /> ReCircle EcoBot
-              </div>
-              <div className="text-xs font-bold text-white">
-                Ask AI Eco-Guide 💬
-              </div>
-            </div>
+            <span className="text-xs font-black tracking-tight">
+              {lang === "hi" ? "🌿 EcoBot से पूछें" : "🌿 Ask EcoBot"}
+            </span>
           </button>
         </div>
       )}
@@ -158,7 +185,7 @@ export default function CitizenEcoBot() {
                   </Badge>
                 </div>
                 <p className="text-[11px] text-emerald-100/80 mt-0.5">
-                  Eco Sorting & Fair Scrap Assistant
+                  {lang === "hi" ? "कचरा छंटाई व ताज़ा भाव गाइड" : "Eco Sorting & Fair Scrap Assistant"}
                 </p>
               </div>
             </div>
@@ -182,7 +209,7 @@ export default function CitizenEcoBot() {
               <button
                 key={idx}
                 onClick={() => handleSend(chip.q)}
-                className="shrink-0 bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all shadow-2xs"
+                className="shrink-0 bg-white hover:bg-emerald-50 text-slate-800 hover:text-emerald-900 border border-slate-200 hover:border-emerald-300 rounded-full px-3 py-1 text-[11px] font-bold transition-all shadow-2xs"
               >
                 {chip.text}
               </button>
@@ -240,7 +267,7 @@ export default function CitizenEcoBot() {
             })}
 
             {isLoading && (
-              <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold p-2">
+              <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold p-2">
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-bounce"></div>
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]"></div>
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.4s]"></div>
@@ -276,4 +303,3 @@ export default function CitizenEcoBot() {
     </>
   );
 }
-

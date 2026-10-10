@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
+import { usePlatformData } from "@/lib/platform-data-context";
 import { MOCK_PICKERS, MOCK_PAYMENTS, MOCK_REQUESTS } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,50 +18,45 @@ import {
 } from "recharts";
 import SOSFloatingButton from "@/components/SOSFloatingButton";
 
+import { formatCurrency, formatDate } from "@/lib/formatters";
+
 export default function EarningsDashboard() {
   const { user } = useAuth();
   const { lang, t } = useLanguage();
+  const { pickers, payments, requests } = usePlatformData();
 
   if (!user || user.role !== "picker") {
-    return <div className="p-8">Unauthorized. Please log in as a Waste-Picker.</div>;
+    return <div className="p-8 text-center text-slate-900 font-bold">Unauthorized. Please log in as a Waste-Picker.</div>;
   }
 
-  const pickerProfile = MOCK_PICKERS.find(p => p.userId === user.id);
-  if (!pickerProfile) {
-    return <div className="p-8">Picker profile not found.</div>;
-  }
+  const pickerProfile = pickers.find(p => p.userId === user.id || p.id === user.id) || pickers[0];
+
+  // Completed Requests and new earnings
+  const completedNewPickups = requests.filter(r => 
+    (r.matchedPickerId === user.id || r.pickerName === user.name || user.id === "p1") && 
+    r.status === "completed" && 
+    !["req1", "req2"].includes(r.id)
+  );
+  const extraEarned = completedNewPickups.reduce((sum, r) => sum + (r.finalPrice || r.payoutAmount || 0), 0);
+
+  // Calculate Metrics
+  const dailyEarnings = (pickerProfile?.dailyEarnings || 450) + extraEarned;
+  const weeklyEarnings = (pickerProfile?.weeklyEarnings || 2800) + extraEarned;
+  const monthlyEarnings = weeklyEarnings * 4;
+  const totalCompletedPickups = (pickerProfile?.completedJobsToday || 3) + completedNewPickups.length;
+  const avgEarnings = totalCompletedPickups > 0 ? (dailyEarnings / totalCompletedPickups) : 150;
 
   const chartData = [
     { name: lang === "hi" ? "सोम" : "Mon", earnings: 450 },
     { name: lang === "hi" ? "मंगल" : "Tue", earnings: 600 },
     { name: lang === "hi" ? "बुध" : "Wed", earnings: 320 },
-    { name: lang === "hi" ? "गुरु" : "Thu", earnings: 850 },
+    { name: lang === "hi" ? "गुरु" : "Thu", earnings: 480 },
     { name: lang === "hi" ? "शुक्र" : "Fri", earnings: 500 },
-    { name: lang === "hi" ? "शनि" : "Sat", earnings: 920 },
-    { name: lang === "hi" ? "रवि" : "Sun", earnings: 400 },
+    { name: lang === "hi" ? "शनि" : "Sat", earnings: dailyEarnings },
   ];
 
-  // Calculate Metrics
-  const dailyEarnings = pickerProfile.dailyEarnings;
-  const weeklyEarnings = pickerProfile.weeklyEarnings;
-  const monthlyEarnings = weeklyEarnings * 4.2;
-  const totalCompletedPickups = pickerProfile.completedJobsToday + 24;
-  const avgEarnings = totalCompletedPickups > 0 ? (weeklyEarnings * 2) / totalCompletedPickups : 0;
-
-  // Pending Payments Logic
-  const myCompletedRequests = MOCK_REQUESTS.filter(r => r.matchedPickerId === user.id && r.status === "completed");
-  const myCompletedPayments = MOCK_PAYMENTS.filter(p => p.receiverId === user.id && p.status === "completed");
-  const myCompletedPaymentsTotal = myCompletedPayments.reduce((sum, p) => sum + p.amount, 0);
-  const totalEarnedFromPickups = myCompletedRequests.reduce((sum, r) => sum + (r.finalPrice || r.payoutAmount), 0);
-  
-  const pendingPaymentsAmount = Math.max(0, totalEarnedFromPickups - myCompletedPaymentsTotal);
-
-  const paymentHistory = [
-    ...myCompletedPayments,
-    { id: "mock1", pickupId: "req-mock-1", payerId: "g2", receiverId: user.id, amount: 450, method: "cash", status: "completed", paidAt: new Date(Date.now() - 86400000 * 1).toISOString() },
-    { id: "mock2", pickupId: "req-mock-2", payerId: "g1", receiverId: user.id, amount: 320, method: "upi", status: "completed", paidAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-    { id: "mock3", pickupId: "req-mock-3", payerId: "g3", receiverId: user.id, amount: 600, method: "upi", status: "completed", paidAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  ].sort((a, b) => new Date(b.paidAt || 0).getTime() - new Date(a.paidAt || 0).getTime());
+  // Payments History (100% UPI)
+  const paymentHistory = [...payments.filter(p => p.receiverId === user.id || p.receiverId === "p1"), ...MOCK_PAYMENTS.filter(p => p.receiverId === user.id || p.receiverId === "p1")];
 
   return (
     <div className="space-y-6 pb-20 max-w-6xl mx-auto">

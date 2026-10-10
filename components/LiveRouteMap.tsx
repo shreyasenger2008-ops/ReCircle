@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { useLanguage } from "@/lib/language-context";
 import { Navigation } from "lucide-react";
 
@@ -34,6 +35,8 @@ export default function LiveRouteMap({ stops = [], height = "400px", zoom = 14 }
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
+    let isMounted = true;
+
     const defaultCenter: [number, number] = stops.length > 0 
       ? [stops[0].lat, stops[0].lng] 
       : [12.935, 77.624];
@@ -46,10 +49,10 @@ export default function LiveRouteMap({ stops = [], height = "400px", zoom = 14 }
     });
     mapInstanceRef.current = map;
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    // Free OpenStreetMap Tiles - No API Key Required
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
-      subdomains: "abcd",
     }).addTo(map);
 
     const latLngs: [number, number][] = [];
@@ -116,6 +119,7 @@ export default function LiveRouteMap({ stops = [], height = "400px", zoom = 14 }
       fetch(url)
         .then(res => res.json())
         .then(data => {
+          if (!isMounted || !mapInstanceRef.current) return;
           if (data.code === "Ok" && data.routes?.[0]?.geometry?.coordinates) {
             const routeCoordinates = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]]);
             const polyline = L.polyline(routeCoordinates, {
@@ -131,29 +135,42 @@ export default function LiveRouteMap({ stops = [], height = "400px", zoom = 14 }
               durationMin: Math.round(data.routes[0].duration / 60),
             });
 
-            map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
-          } else {
+            const bounds = polyline.getBounds();
+            if (bounds.isValid()) {
+              map.fitBounds(bounds, { padding: [40, 40] });
+            }
+          } else if (latLngs.length > 0) {
             const fallbackPolyline = L.polyline(latLngs, {
               color: "#10b981",
               weight: 4,
               opacity: 0.8,
               dashArray: "6, 8",
             }).addTo(map);
-            map.fitBounds(fallbackPolyline.getBounds(), { padding: [40, 40] });
+            const bounds = fallbackPolyline.getBounds();
+            if (bounds.isValid()) {
+              map.fitBounds(bounds, { padding: [40, 40] });
+            }
           }
         })
         .catch(() => {
-          const fallbackPolyline = L.polyline(latLngs, {
-            color: "#10b981",
-            weight: 4,
-            opacity: 0.8,
-            dashArray: "6, 8",
-          }).addTo(map);
-          map.fitBounds(fallbackPolyline.getBounds(), { padding: [40, 40] });
+          if (!isMounted || !mapInstanceRef.current) return;
+          if (latLngs.length > 0) {
+            const fallbackPolyline = L.polyline(latLngs, {
+              color: "#10b981",
+              weight: 4,
+              opacity: 0.8,
+              dashArray: "6, 8",
+            }).addTo(map);
+            const bounds = fallbackPolyline.getBounds();
+            if (bounds.isValid()) {
+              map.fitBounds(bounds, { padding: [40, 40] });
+            }
+          }
         });
     }
 
     return () => {
+      isMounted = false;
       map.remove();
       mapInstanceRef.current = null;
     };

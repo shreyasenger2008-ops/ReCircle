@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useLanguage } from "@/lib/language-context";
-import { MOCK_RATES } from "@/lib/mock-rates";
+import { usePlatformData } from "@/lib/platform-data-context";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,14 +13,15 @@ import {
 
 export default function FairPriceBoard() {
   const { lang, t } = useLanguage();
+  const { rates } = usePlatformData();
   const [calcMaterial, setCalcMaterial] = useState("Plastic");
   const [calcWeight, setCalcWeight] = useState(15);
 
-  const selectedRate = MOCK_RATES.find(r => r.material.toLowerCase() === calcMaterial.toLowerCase()) || MOCK_RATES[0];
+  const selectedRate = rates.find(r => r.material.toLowerCase() === calcMaterial.toLowerCase()) || rates[0] || { fairRate: 18, marketRate: 12, material: "Plastic" };
   const marketTotal = selectedRate.marketRate * calcWeight;
   const fairTotal = selectedRate.fairRate * calcWeight;
   const extraWorkerBonus = fairTotal - marketTotal;
-  const workerBonusPercent = Math.round((extraWorkerBonus / marketTotal) * 100);
+  const workerBonusPercent = Math.round((extraWorkerBonus / (marketTotal || 1)) * 100);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-20">
@@ -68,7 +69,7 @@ export default function FairPriceBoard() {
                     onChange={(e) => setCalcMaterial(e.target.value)}
                     className="flex h-11 w-full rounded-xl border border-slate-700 bg-slate-800 px-3 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    {MOCK_RATES.map(r => (
+                    {rates.map(r => (
                       <option key={r.id} value={r.material}>
                         {lang === "hi" ? (r.material === "Plastic" ? "प्लास्टिक" : r.material === "Paper" ? "कागज़" : r.material === "Cardboard" ? "गत्ता" : r.material === "Metal" ? "धातु" : r.material) : r.material} (₹{r.fairRate}/kg)
                       </option>
@@ -145,7 +146,7 @@ export default function FairPriceBoard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
-                {MOCK_RATES.map((rate) => (
+                {rates.map((rate) => (
                   <tr key={rate.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-bold text-slate-900 text-sm">
                       {lang === "hi" ? (rate.material === "Plastic" ? "प्लास्टिक (Plastic)" : rate.material === "Paper" ? "कागज़ (Paper)" : rate.material === "Cardboard" ? "गत्ता (Cardboard)" : rate.material === "Metal" ? "धातु (Metal)" : rate.material === "Glass" ? "कांच (Glass)" : rate.material) : rate.material}
@@ -179,6 +180,59 @@ export default function FairPriceBoard() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </CardContent>
+      </Card>
+      {/* How is the fair premium funded? */}
+      <Card className="shadow-xs border-emerald-200/80 rounded-2xl bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/50 overflow-hidden">
+        <CardHeader className="p-5 pb-3 border-b border-emerald-100/60">
+          <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">💡</span>
+            {lang === "hi" ? "उचित मूल्य प्रीमियम (Fair Premium) कैसे फंड होता है?" : "How is the Fair Premium Funded?"}
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-600">
+            {lang === "hi" 
+              ? "बिना नागरिकों पर अतिरिक्त बोझ डाले सफाई मित्रों को 30-40% अधिक मूल्य कैसे मिलता है?" 
+              : "How we provide 30–40% above-market payouts without burdening waste generators:"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-5">
+          <div className="grid sm:grid-cols-3 gap-4 text-xs">
+            <div className="p-4 rounded-xl bg-white border border-emerald-100 shadow-2xs space-y-1.5">
+              <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                {lang === "hi" ? "बिचौलियों का खात्मा" : "Middlemen Recapture"}
+              </div>
+              <p className="text-slate-600 leading-relaxed">
+                {lang === "hi"
+                  ? "पारंपरिक श्रृंखला में 3-4 कबाड़ी डीलर 40% मार्जिन दबा लेते हैं। डायरेक्ट मिल कनेक्शन से यह पैसा सीधे सफाई मित्र को मिलता है।"
+                  : "Traditional supply chains have 3–4 layers of scrap dealers taking 40% margins. We connect directly to aggregate mills, returning this margin to pickers."}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white border border-emerald-100 shadow-2xs space-y-1.5">
+              <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">2</span>
+                {lang === "hi" ? "EPR ब्रांड सब्सिडी" : "Brand EPR Subsidies"}
+              </div>
+              <p className="text-slate-600 leading-relaxed">
+                {lang === "hi"
+                  ? "FMCG और पैकेजिंग ब्रांड विस्तारित उत्पादक उत्तरदायित्व (EPR) नियमों के तहत प्रमाणित रीसाइक्लिंग पर प्रति किलो ग्रीन इंसेंटिव देते हैं।"
+                  : "FMCG brands fund ethical collection credits under Extended Producer Responsibility (EPR) mandates, directly co-funding worker floor rates."}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white border border-emerald-100 shadow-2xs space-y-1.5">
+              <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">3</span>
+                {lang === "hi" ? "नगर निगम लैंडफिल बचत" : "Zero-Landfill Grants"}
+              </div>
+              <p className="text-slate-600 leading-relaxed">
+                {lang === "hi"
+                  ? "कचरा डंपिंग यार्ड तक न जाने से नगर निगम की टिपिंग फीस बचती है, जिसका एक हिस्सा वर्कर वेलफेयर पूल में डाला जाता है।"
+                  : "Diverting dry recyclables at source saves municipal landfill tipping fees. Municipalities share these operational savings with the Suraksha health pool."}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -139,22 +139,18 @@ export default function PickerVoiceSaathi() {
     <>
       {/* Floating Trigger Button for Safai Saathi (Positioned clearly above SOS on bottom-right) */}
       {!isOpen && (
-        <div className="fixed bottom-20 right-6 z-50 animate-in fade-in slide-in-from-bottom-5">
+        <div className="fixed bottom-22 right-6 z-40 animate-in fade-in slide-in-from-bottom-5">
           <button
             onClick={() => setIsOpen(true)}
-            className="group relative flex items-center gap-3 bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white p-3 pr-5 rounded-full shadow-2xl hover:shadow-emerald-500/40 transition-all hover:scale-105 active:scale-95 border-2 border-emerald-400"
+            aria-label="Open Safai Saathi Voice Assistant"
+            title={lang === "hi" ? "सफाई साथी वॉइस असिस्टेंट (बोलें)" : "Safai Saathi Voice Co-Pilot (Speak)"}
+            className="group relative flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-tr from-emerald-600 via-teal-700 to-slate-900 text-white shadow-xl hover:shadow-emerald-500/40 transition-all hover:scale-110 active:scale-95 border-2 border-emerald-400"
           >
-            <div className="h-10 w-10 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-black shadow-md">
-              <Mic className="h-5 w-5 animate-pulse" />
-            </div>
-            <div className="text-left">
-              <div className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                <Sparkles className="h-3 w-3" /> Voice Co-Pilot
-              </div>
-              <div className="text-xs font-black text-white">
-                {lang === "hi" ? "सफाई साथी (बोलें) 🎙️" : "Safai Saathi Audio 🎙️"}
-              </div>
-            </div>
+            <Mic className="h-5 w-5 text-emerald-300 animate-pulse group-hover:scale-110 transition-transform" />
+            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-400 border-2 border-slate-950"></span>
+            </span>
           </button>
         </div>
       )}
