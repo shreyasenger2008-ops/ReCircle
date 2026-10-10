@@ -123,6 +123,13 @@ export default function SidebarLayout({ children, role }: { children: React.Reac
     setNotifications(NOTIFICATIONS_BY_ROLE[role] || NOTIFICATIONS_BY_ROLE.generator);
   }, [role, user?.id]);
 
+  // Ensure Generator and Admin are strictly English, only Picker has [ हिन्दी | EN ]
+  useEffect(() => {
+    if (role === "generator" || role === "admin") {
+      setLang("en");
+    }
+  }, [role, setLang]);
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
@@ -322,36 +329,29 @@ export default function SidebarLayout({ children, role }: { children: React.Reac
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Global Language Toggle in Navbar (Active for Generator, Picker & Admin) */}
-            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-              <button
-                onClick={() => setLang("hi")}
-                className={cn(
-                  "px-2.5 py-1 rounded-lg text-xs font-bold transition-all",
-                  lang === "hi" ? "bg-emerald-600 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                हिन्दी
-              </button>
-              <button
-                onClick={() => setLang("kn")}
-                className={cn(
-                  "px-2.5 py-1 rounded-lg text-xs font-bold transition-all",
-                  lang === "kn" ? "bg-emerald-600 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                ಕನ್ನಡ
-              </button>
-              <button
-                onClick={() => setLang("en")}
-                className={cn(
-                  "px-2.5 py-1 rounded-lg text-xs font-bold transition-all",
-                  lang === "en" ? "bg-emerald-600 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                EN
-              </button>
-            </div>
+            {/* Language Toggle: ONLY for Waste-Picker Partner (Hindi & English). Generator & Admin are English only */}
+            {role === "picker" && (
+              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button
+                  onClick={() => setLang("hi")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg text-xs font-bold transition-all",
+                    lang === "hi" ? "bg-emerald-600 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                  )}
+                >
+                  हिन्दी
+                </button>
+                <button
+                  onClick={() => setLang("en")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg text-xs font-bold transition-all",
+                    lang === "en" ? "bg-emerald-600 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                  )}
+                >
+                  EN
+                </button>
+              </div>
+            )}
 
             {/* Quick Persona Switcher for easy demo */}
             <div className="hidden xl:flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">

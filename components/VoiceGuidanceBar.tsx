@@ -116,14 +116,6 @@ export default function VoiceGuidanceBar({ role = "picker" }: Props) {
             >
               English
             </button>
-            <button
-              onClick={() => handleLangChange("kn")}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                lang === "kn" ? "bg-emerald-500 text-slate-950 shadow" : "text-slate-300 hover:text-white"
-              }`}
-            >
-              ಕನ್ನಡ
-            </button>
           </div>
 
           {/* Voice Command Mic */}

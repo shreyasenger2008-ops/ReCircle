@@ -91,7 +91,7 @@ export default function AdminPriceBoard() {
     sortingDifficulty: "medium",
     demandLevel: "high",
     reason: "",
-    effectiveDate: new Date().toISOString().split("T")[0],
+    effectiveDate: "2026-10-10",
   });
 
   if (!user || user.role !== "admin") {
